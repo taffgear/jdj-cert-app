@@ -1,0 +1,45 @@
+.App {
+
+}
+
+.start-stop {
+  height: 200px;
+}
+
+.status {
+  margin-top: 10px;
+  height: 300px;
+}
+.status .process-status {
+  margin-top: 50px;
+  font-size: 22px;
+  text-transform: uppercase;
+}
+.status .process-status-log {
+  margin-top: 20px;
+  color: grey;
+}
+
+.filemanager {
+  position: relative;
+  height: 510px;
+}
+.filemanager .upload-file-form {
+  position: absolute;
+  bottom: 20px;
+}
+.filemanager h2 {
+  margin-bottom: 20px;
+}
+
+.logs-container {
+  margin-top: 10px;
+}
+.logs-container .logs-content {
+  height: 300px;
+  padding-top: 20px;
+}
+.logs-container .area {
+  margin: 0 auto;
+  height: 300px;
+}
