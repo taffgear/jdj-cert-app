@@ -24,9 +24,8 @@
   position: relative;
   height: 510px;
 }
-.filemanager .upload-file-form {
-  position: absolute;
-  bottom: 20px;
+.filemanager .files-list {
+  max-height: 200px;
 }
 .filemanager h2 {
   margin-bottom: 20px;
@@ -42,4 +41,25 @@
 .logs-container .area {
   margin: 0 auto;
   height: 300px;
+}
+
+.process-files {
+  margin-bottom: 20px;
+}
+.dropzone {
+  width: 100%;
+}
+.dropzone p {
+  text-align: center;
+}
+.dropzone button {
+  position: absolute;
+  top: calc(50%);
+  left: calc(50% - 40px);
+}
+.dropzone > div {
+  position: relative;
+  width: calc(100% - 40px) !important;
+  height: 150px !important;
+  padding: 20px;
 }
