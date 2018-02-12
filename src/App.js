@@ -13,10 +13,10 @@ import AddIcon from 'material-ui-icons/Add';
 import DeleteIcon from 'material-ui-icons/Delete';
 import IconButton from 'material-ui/IconButton';
 // import MenuIcon from 'material-ui-icons/Menu';
-import Card, { CardActions, CardContent } from 'material-ui/Card';
-import { FormGroup, FormControlLabel } from 'material-ui/Form';
+import Card, { CardContent } from 'material-ui/Card';
+// import { FormGroup, FormControlLabel } from 'material-ui/Form';
 import Checkbox from 'material-ui/Checkbox';
-import TextField from 'material-ui/TextField';
+// import TextField from 'material-ui/TextField';
 import Tabs, { Tab } from 'material-ui/Tabs';
 import List, {
   ListItem,
@@ -27,12 +27,13 @@ import List, {
 import Dropzone from 'react-dropzone';
 import shortid from 'shortid';
 import axios from 'axios';
+import findIndex from 'lodash/findIndex';
 
 import './App.css';
 
 import cnf from '../config.json';
 
-const BasicDropzone = React.createClass({
+const FileManager = React.createClass({
     getInitialState() {
         return {
             items: [],
@@ -82,9 +83,11 @@ const BasicDropzone = React.createClass({
                 username: cnf.api.auth.username,
                 password: cnf.api.auth.password,
             } })
-            .then((response) => {
-                console.log(response);
-                this.state.items = [];
+            .then(() => {
+                this.state.queue.forEach((id) => {
+                    this.state.items.splice(findIndex(this.state.items, item => item.id === id), 1);
+                });
+
                 this.state.files = [];
                 this.state.queue = [];
 
@@ -98,63 +101,73 @@ const BasicDropzone = React.createClass({
         this.state.items.forEach((item) => {
             if (!item.selected) return;
 
-            this.state.queue.push(item);
+            this.state.queue.push(item.id);
             this.readFile(item.file);
         });
     },
 
     render() {
         return (
-            <Card className="filemanager">
-                <CardContent>
-                    <Typography type="headline" component="h2" align="left">Bestanden</Typography>
-                    <form className="upload-file-form">
-                        {
-                Size(Find(this.state.items, { selected: true })) ?
-                    <Button className="process-files" raised color="primary" onClick={this.onProcessFilesClick}>Geselecteerde bestanden verwerken</Button>
-              : ''
-              }
-                        <div className="dropzone">
-                            <Dropzone
-                                onDrop={this.onDrop}
-                                accept="application/pdf">
-                                <p>Sleep bestanden in dit vak of klik op de plus knop om bestanden te selecteren.</p>
-                                <Button fab mini color="primary" aria-label="add" className="upload-file">
-                                    <AddIcon />
-                                </Button>
-                            </Dropzone>
-                        </div>
-                    </form>
-                    <List>
-                        <ScrollArea
-                            speed={0.8}
-                            className="files-list"
-                            horizontal={false}
-                            minScrollSize={40}>
-                            {this.state.items.map((obj, index) => (
-                                <ListItem
-                                    key={obj.id}
-                                    dense
-                                    button>
-                                    <Checkbox
-                                        checked={obj.selected}
-                                        tabIndex={-1}
-                                        disableRipple
-                                        onClick={e => this.onSelectChange(e.target.checked, index)} />
-                                    <ListItemText primary={obj.file.name} />
-                                    <ListItemSecondaryAction>
-                                        <IconButton aria-label="Verwijderen" onClick={() => this.onDelete(index)}>
-                                            <DeleteIcon />
-                                        </IconButton>
-                                    </ListItemSecondaryAction>
-                                </ListItem>
-            ))}
-                        </ScrollArea>
-
-                    </List>
-                </CardContent>
-            </Card>
-
+            <Grid className="filemanager" container spacing={0}>
+                <Grid item xs={4}>
+                    <Card className="top-left">
+                        <CardContent>
+                            <Typography type="headline" component="h2" align="left">Bestanden</Typography>
+                            <form className="upload-file-form">
+                                <div className="dropzone">
+                                    <Dropzone
+                                        onDrop={this.onDrop}
+                                        accept="application/pdf">
+                                        <p>Sleep bestanden in dit vak of klik op
+                                        de plus knop om bestanden te selecteren.
+                                        </p>
+                                        <Button fab mini color="primary" aria-label="add" className="upload-file">
+                                            <AddIcon />
+                                        </Button>
+                                    </Dropzone>
+                                    {
+                    Size(Find(this.state.items, { selected: true })) ?
+                        <Button className="process-files" raised color="primary" onClick={this.onProcessFilesClick}>Geselecteerde bestanden verwerken</Button>
+                  : ''
+                  }
+                                </div>
+                            </form>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={8}>
+                    <Card className="top-right">
+                        <CardContent>
+                            <List>
+                                <ScrollArea
+                                    speed={0.8}
+                                    className="files-list"
+                                    horizontal={false}
+                                    minScrollSize={40}>
+                                    {this.state.items.map((obj, index) => (
+                                        <ListItem
+                                            key={obj.id}
+                                            dense
+                                            button>
+                                            <Checkbox
+                                                checked={obj.selected}
+                                                tabIndex={-1}
+                                                disableRipple
+                                                onClick={e => this.onSelectChange(e.target.checked, index)} />
+                                            <ListItemText primary={obj.file.name} />
+                                            <ListItemSecondaryAction>
+                                                <IconButton aria-label="Verwijderen" onClick={() => this.onDelete(index)}>
+                                                    <DeleteIcon />
+                                                </IconButton>
+                                            </ListItemSecondaryAction>
+                                        </ListItem>
+  ))}
+                                </ScrollArea>
+                            </List>
+                        </CardContent>
+                    </Card>
+                </Grid>
+            </Grid>
         );
     },
 });
@@ -256,75 +269,6 @@ ViewLogs.propTypes = {
     }).isRequired,
 };
 
-const Status = props => (
-    <Card className="status">
-        <CardContent>
-            <Typography type="headline" component="h2" align="left">Status</Typography>
-            <Typography className="process-status" component="h3">
-                { props.running ? 'Actief' : 'Gestopt' }
-            </Typography>
-            {
-              props.running ?
-                  <Typography className="process-status-log" component="p">
-                Wachten op bestanden...
-                  </Typography>
-              : ''
-            }
-
-        </CardContent>
-    </Card>
-);
-
-const ControlProcess = props =>
-     (
-         <Card className="start-stop">
-             <CardContent>
-                 <CardActions>
-                     { props.running ?
-                         <Button raised color="primary" onClick={props.onStop}>Stop proces</Button>
-                      :
-                         <Button raised color="primary" onClick={props.onStart}>Start proces</Button>
-                    }
-                 </CardActions>
-                 <form>
-                     { props.running ? '' :
-                     <FormGroup>
-                         <FormControlLabel
-                             control={
-                                 <Checkbox
-                                     checked={props.scheduledStartChecked}
-                                     onChange={props.onScheduledStartChanged} />
-                        }
-                             label="Uitgesteld starten" />
-                     </FormGroup>
-               }
-
-                     { props.scheduledStartChecked && !props.running ?
-                         <FormGroup>
-                             <TextField
-                                 id="datetime-local"
-                                 label="Datum/tijd"
-                                 type="datetime-local"
-                                 defaultValue={Moment().format('YYYY-MM-DDTHH:mm')}
-                                 InputLabelProps={{
-                                     shrink: true,
-                                 }} />
-                         </FormGroup>
-                       : ''
-               }
-                 </form>
-             </CardContent>
-         </Card>
-    );
-
-ControlProcess.propTypes = {
-    running: PropTypes.bool.isRequired,
-    scheduledStartChecked: PropTypes.bool.isRequired,
-    onStart: PropTypes.func.isRequired,
-    onStop: PropTypes.func.isRequired,
-    onScheduledStartChanged: PropTypes.func.isRequired,
-};
-
 class App extends React.Component {
     getInitialState: () => {
       errors: [],
@@ -337,8 +281,6 @@ class App extends React.Component {
   };
 
     state = {
-        running: false,
-        scheduledStartChecked: false,
         activeLogsTab: 0,
         errors: [
           { id: 1, err: 'Something went wrong while processing your request', document: '\\JDJDN01\file01.pdf' },
@@ -378,22 +320,7 @@ class App extends React.Component {
             { id: 4, title: 'Artikel KRLOO603', date: Moment().format('DD-MM-YYYY') },
             { id: 5, title: 'Artikel KRLOO604', date: Moment().format('DD-MM-YYYY') },
             ],
-        }
-    };
-
-    onScheduledStartChanged = (e) => {
-        this.state.scheduledStartChecked = e.target.checked;
-        this.setState(this.state);
-    };
-
-    onControlStart = () => {
-        this.state.running = true;
-        this.setState(this.state);
-    };
-
-    onControlStop = () => {
-        this.state.running = false;
-        this.setState(this.state);
+        },
     };
 
     onLogTabsChange = (event, value) => {
@@ -411,21 +338,7 @@ class App extends React.Component {
                         </Typography>
                     </Toolbar>
                 </AppBar>
-                <Grid container spacing={0}>
-                    <Grid item xs={4}>
-                        <ControlProcess
-                            onStart={this.onControlStart}
-                            onStop={this.onControlStop}
-                            onScheduledStartChanged={this.onScheduledStartChanged}
-                            running={this.state.running}
-                            scheduledStartChecked={this.state.scheduledStartChecked} />
-                        <Status running={this.state.running} />
-                    </Grid>
-                    <Grid item xs={8}>
-                        <BasicDropzone />
-                    </Grid>
-                </Grid>
-
+                <FileManager />
                 <Grid item xs={12}>
                     <ViewLogs
                         errors={this.state.errors}

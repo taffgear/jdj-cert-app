@@ -2,30 +2,15 @@
 
 }
 
-.start-stop {
-  height: 200px;
-}
-
-.status {
-  margin-top: 10px;
-  height: 300px;
-}
-.status .process-status {
-  margin-top: 50px;
-  font-size: 22px;
-  text-transform: uppercase;
-}
-.status .process-status-log {
-  margin-top: 20px;
-  color: grey;
+.filemanager .top-left, .filemanager .top-right {
+  height: 400px;
 }
 
 .filemanager {
   position: relative;
-  height: 510px;
 }
 .filemanager .files-list {
-  max-height: 200px;
+  max-height: 370px;
 }
 .filemanager h2 {
   margin-bottom: 20px;
@@ -52,14 +37,15 @@
 .dropzone p {
   text-align: center;
 }
-.dropzone button {
+.dropzone button.upload-file {
   position: absolute;
   top: calc(50%);
   left: calc(50% - 40px);
 }
 .dropzone > div {
   position: relative;
-  width: calc(100% - 40px) !important;
-  height: 150px !important;
+  width: calc(100% - 50px) !important;
+  height: 200px !important;
   padding: 20px;
+  margin-bottom: 20px;
 }
