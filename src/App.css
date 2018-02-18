@@ -49,3 +49,13 @@
   padding: 20px;
   margin-bottom: 20px;
 }
+
+
+.logs-list button a {
+  text-decoration: none;
+  color: #fff;
+}
+.logs-list button {
+  margin-left: 10px;
+  margin-bottom: 20px;
+}

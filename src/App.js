@@ -30,6 +30,7 @@ import Dropzone from 'react-dropzone';
 import shortid from 'shortid';
 import axios from 'axios';
 import findIndex from 'lodash/findIndex';
+import { CSVLink } from 'react-csv';
 
 import './App.css';
 
@@ -203,6 +204,10 @@ const LogComponent = props => (
 
 const ChecklistArticles = props => (
     <Paper className="logs-list">
+        <Button raised color="primary">
+            <CSVLink data={props.articles} filename={`${props.type}.csv`}>Exporteer als CSV</CSVLink>
+        </Button>
+
         <Table>
             <TableHead>
                 <TableRow>
@@ -272,15 +277,15 @@ const ViewLogs = props => (
             </TabContainer>}
         {props.value === 1 &&
             <TabContainer>
-                <ChecklistArticles articles={props.articles.approved} />
+                <ChecklistArticles type="approved" articles={props.articles.approved} />
             </TabContainer>}
         {props.value === 2 &&
             <TabContainer>
-                <ChecklistArticles articles={props.articles.unapproved} />
+                <ChecklistArticles type="unapproved" articles={props.articles.unapproved} />
             </TabContainer>}
         {props.value === 3 &&
             <TabContainer>
-                <ChecklistArticles articles={props.articles.expired} />
+                <ChecklistArticles type="expired" articles={props.articles.expired} />
             </TabContainer>}
     </div>
     );
