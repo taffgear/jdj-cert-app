@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-// import Moment from 'moment';
+import Moment from 'moment';
 import Find from 'lodash/find';
 import Size from 'lodash/size';
 import ScrollArea from 'react-scrollbar';
@@ -94,6 +94,8 @@ const FileManager = React.createClass({
                 this.state.queue = [];
 
                 this.setState(this.state);
+
+                setTimeout(this.props.onprocessed, 5000);
             })
             .catch(console.log)
       ;
@@ -174,15 +176,29 @@ const FileManager = React.createClass({
     },
 });
 
+FileManager.propTypes = {
+    onprocessed: PropTypes.func.isRequired,
+};
 
 const LogComponent = props => (
-    <List className="logs-list">
-        {props.logs.map(log => (
-            <ListItem button key={log.ts}>
-                <ListItemText primary={log.msg} />
-            </ListItem>
-      ))}
-    </List>
+    <Paper className="logs-list">
+        <Table>
+            <TableHead>
+                <TableRow>
+                    <TableCell>Bericht</TableCell>
+                    <TableCell>Datum/tijd</TableCell>
+                </TableRow>
+            </TableHead>
+            <TableBody>
+                {props.logs.map(n => (
+                    <TableRow key={n.ts}>
+                        <TableCell>{n.msg}</TableCell>
+                        <TableCell>{Moment.unix(n.ts).format('DD-MM-YYYY HH:mm:ss')}</TableCell>
+                    </TableRow>
+         ))}
+            </TableBody>
+        </Table>
+    </Paper>
   );
 
 const ChecklistArticles = props => (
@@ -313,6 +329,30 @@ ViewLogs.propTypes = {
     }).isRequired,
 };
 
+const getArticlesLogs = () => axios.all([
+    axios.get('http://localhost:5000/stock/approved', { auth: {
+        username: cnf.api.auth.username,
+        password: cnf.api.auth.password,
+    } }),
+    axios.get('http://localhost:5000/stock/unapproved', { auth: {
+        username: cnf.api.auth.username,
+        password: cnf.api.auth.password,
+    } }),
+    axios.get('http://localhost:5000/stock/expired', { auth: {
+        username: cnf.api.auth.username,
+        password: cnf.api.auth.password,
+    } }),
+    axios.get('http://localhost:5000/logs', { auth: {
+        username: cnf.api.auth.username,
+        password: cnf.api.auth.password,
+    } }),
+]).then(axios.spread((ares, ures, eres, lres) => {
+    const articles = { approved: ares.data.body, unapproved: ures.data.body, expired: eres.data.body };
+    const logs = lres.data.body;
+
+    return { logs, articles };
+}));
+
 class App extends React.Component {
     getInitialState: () => {
       logs: [],
@@ -325,32 +365,12 @@ class App extends React.Component {
     };
 
     componentDidMount() {
-        axios.all([
-            axios.get('http://localhost:5000/stock/approved', { auth: {
-                username: cnf.api.auth.username,
-                password: cnf.api.auth.password,
-            } }),
-            axios.get('http://localhost:5000/stock/unapproved', { auth: {
-                username: cnf.api.auth.username,
-                password: cnf.api.auth.password,
-            } }),
-            axios.get('http://localhost:5000/stock/expired', { auth: {
-                username: cnf.api.auth.username,
-                password: cnf.api.auth.password,
-            } }),
-            axios.get('http://localhost:5000/logs', { auth: {
-                username: cnf.api.auth.username,
-                password: cnf.api.auth.password,
-            } }),
-        ]).then(axios.spread((ares, ures, eres, lres) => {
-            const articles = { approved: ares.data.body, unapproved: ures.data.body, expired: eres.data.body };
-            const logs = lres.data.body;
-
-            this.state.articles = articles;
-            this.state.logs = logs;
+        getArticlesLogs().then((result) => {
+            this.state.articles = result.articles;
+            this.state.logs = result.logs;
 
             this.setState(this.state);
-        }));
+        });
     }
 
     state = {
@@ -368,6 +388,15 @@ class App extends React.Component {
         this.setState(this.state);
     };
 
+    onFilesProcessed = () => {
+        getArticlesLogs().then((result) => {
+            this.state.articles = result.articles;
+            this.state.logs = result.logs;
+
+            this.setState(this.state);
+        });
+    };
+
     render() {
         return (
             <div className="App">
@@ -378,7 +407,7 @@ class App extends React.Component {
                         </Typography>
                     </Toolbar>
                 </AppBar>
-                <FileManager />
+                <FileManager onprocessed={this.onFilesProcessed} />
                 <Grid item xs={12}>
                     <ViewLogs
                         logs={this.state.logs}
