@@ -14,9 +14,15 @@ import DeleteIcon from 'material-ui-icons/Delete';
 import IconButton from 'material-ui/IconButton';
 // import MenuIcon from 'material-ui-icons/Menu';
 import Card, { CardContent } from 'material-ui/Card';
-// import { FormGroup, FormControlLabel } from 'material-ui/Form';
+import { FormGroup } from 'material-ui/Form';
 import Checkbox from 'material-ui/Checkbox';
-// import TextField from 'material-ui/TextField';
+import TextField from 'material-ui/TextField';
+import Dialog, {
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+} from 'material-ui/Dialog';
 import Tabs, { Tab } from 'material-ui/Tabs';
 import List, {
   ListItem,
@@ -25,6 +31,7 @@ import List, {
 } from 'material-ui/List';
 import Table, { TableBody, TableCell, TableHead, TableRow } from 'material-ui/Table';
 import Paper from 'material-ui/Paper';
+import Divider from 'material-ui/Divider';
 // import Icon from 'material-ui/Icon';
 import Dropzone from 'react-dropzone';
 import shortid from 'shortid';
@@ -181,6 +188,56 @@ FileManager.propTypes = {
     onprocessed: PropTypes.func.isRequired,
 };
 
+const SettingsComponent = props => (
+    <div>
+        <Dialog
+            open={props.settings.open}
+            onClose={props.handleClose}
+            aria-labelledby="form-dialog-title">
+            <DialogTitle id="form-dialog-title">Instellingen</DialogTitle>
+            <DialogContent>
+                <DialogContentText>
+             Pas hier de instellingen aan voor het verwerken van certificaat bestanden.
+                </DialogContentText>
+                <Divider />
+                <br />
+                <FormGroup>
+                    <TextField
+                        id="date-certificates"
+                        label="Datum voor certificaten"
+                        type="date"
+                        name="fixed_date"
+                        onChange={props.onChangeFixedDate}
+                        value={props.settings.fixed_date}
+                        InputLabelProps={{
+                            shrink: true,
+                        }} />
+                </FormGroup>
+                <FormGroup>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        id="watch_idr"
+                        name="watch_dir"
+                        label="Map locatie voor certificaten"
+                        type="text"
+                        onChange={props.onChangeWatchDir}
+                        value={props.settings.watch_dir}
+                        fullWidth />
+                </FormGroup>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={props.handleClose} color="primary">
+             Sluiten
+                </Button>
+                <Button onClick={props.handleSave} color="primary">
+             Opslaan
+                </Button>
+            </DialogActions>
+        </Dialog>
+    </div>
+);
+
 const LogComponent = props => (
     <Paper className="logs-list">
         <Table>
@@ -334,29 +391,26 @@ ViewLogs.propTypes = {
     }).isRequired,
 };
 
-const getArticlesLogs = () => axios.all([
-    axios.get('http://localhost:5000/stock/approved', { auth: {
+const getArticlesLogs = () => {
+    const opts = { auth: {
         username: cnf.api.auth.username,
         password: cnf.api.auth.password,
-    } }),
-    axios.get('http://localhost:5000/stock/unapproved', { auth: {
-        username: cnf.api.auth.username,
-        password: cnf.api.auth.password,
-    } }),
-    axios.get('http://localhost:5000/stock/expired', { auth: {
-        username: cnf.api.auth.username,
-        password: cnf.api.auth.password,
-    } }),
-    axios.get('http://localhost:5000/logs', { auth: {
-        username: cnf.api.auth.username,
-        password: cnf.api.auth.password,
-    } }),
-]).then(axios.spread((ares, ures, eres, lres) => {
-    const articles = { approved: ares.data.body, unapproved: ures.data.body, expired: eres.data.body };
-    const logs = lres.data.body;
+    } };
 
-    return { logs, articles };
-}));
+    return axios.all([
+        axios.get('http://localhost:5000/stock/approved', opts),
+        axios.get('http://localhost:5000/stock/unapproved', opts),
+        axios.get('http://localhost:5000/stock/expired', opts),
+        axios.get('http://localhost:5000/logs', opts),
+        axios.get('http://localhost:5000/settings', opts),
+    ]).then(axios.spread((ares, ures, eres, lres, sres) => {
+        const articles = { approved: ares.data.body, unapproved: ures.data.body, expired: eres.data.body };
+        const logs = lres.data.body;
+        const settings = sres.data.body;
+
+        return { logs, articles, settings };
+    }));
+};
 
 class App extends React.Component {
     getInitialState: () => {
@@ -373,6 +427,8 @@ class App extends React.Component {
         getArticlesLogs().then((result) => {
             this.state.articles = result.articles;
             this.state.logs = result.logs;
+            this.state.settings.watch_dir = result.settings.watch_dir;
+            this.state.settings.fixed_date = result.settings.fixed_date;
 
             this.setState(this.state);
         });
@@ -385,6 +441,11 @@ class App extends React.Component {
             approved: [],
             unapproved: [],
             expired: [],
+        },
+        settings: {
+            open: false,
+            watch_dir: '',
+            fixed_date: '',
         },
     };
 
@@ -402,6 +463,38 @@ class App extends React.Component {
         });
     };
 
+    handleSettingsOpen = () => {
+        this.state.settings.open = true;
+        this.setState(this.state);
+    };
+
+    handleSettingsClose = () => {
+        this.state.settings.open = false;
+        this.setState(this.state);
+    };
+
+    updateSettingsWatchDir = (e) => {
+        this.state.settings.watch_dir = e.target.value;
+        this.setState(this.state);
+    }
+
+    updateSettingsFixedDate = (e) => {
+        this.state.settings.fixed_date = e.target.value;
+        this.setState(this.state);
+    }
+
+    handleSettingsSave = () => {
+        axios.put('http://localhost:5000/settings', this.state.settings, {
+            auth: {
+                username: cnf.api.auth.username,
+                password: cnf.api.auth.password,
+            } })
+            .then(() => {
+                this.state.settings.open = false;
+                this.setState(this.state);
+            });
+    };
+
     render() {
         return (
             <div className="App">
@@ -410,6 +503,7 @@ class App extends React.Component {
                         <Typography type="title" color="inherit">
                           J de Jonge certificaten
                         </Typography>
+                        <Button color="inherit" onClick={this.handleSettingsOpen}>Instellingen</Button>
                     </Toolbar>
                 </AppBar>
                 <FileManager onprocessed={this.onFilesProcessed} />
@@ -420,6 +514,12 @@ class App extends React.Component {
                         value={this.state.activeLogsTab}
                         onTabsChange={this.onLogTabsChange} />
                 </Grid>
+                <SettingsComponent
+                    handleClose={this.handleSettingsClose}
+                    handleSave={this.handleSettingsSave}
+                    settings={this.state.settings}
+                    onChangeFixedDate={this.updateSettingsFixedDate}
+                    onChangeWatchDir={this.updateSettingsWatchDir} />
             </div>
         );
     }
