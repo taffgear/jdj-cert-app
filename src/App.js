@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import Moment from 'moment';
+// import Moment from 'moment';
 import Find from 'lodash/find';
 import Size from 'lodash/size';
 import ScrollArea from 'react-scrollbar';
@@ -23,6 +23,8 @@ import List, {
   ListItemSecondaryAction,
   ListItemText,
 } from 'material-ui/List';
+import Table, { TableBody, TableCell, TableHead, TableRow } from 'material-ui/Table';
+import Paper from 'material-ui/Paper';
 // import Icon from 'material-ui/Icon';
 import Dropzone from 'react-dropzone';
 import shortid from 'shortid';
@@ -175,22 +177,47 @@ const FileManager = React.createClass({
 
 const LogComponent = props => (
     <List className="logs-list">
-        {props.errors.map(error => (
-            <ListItem button key={error.id}>
-                <ListItemText primary={error.err} secondary={error.document} />
+        {props.logs.map(log => (
+            <ListItem button key={log.ts}>
+                <ListItemText primary={log.msg} />
             </ListItem>
       ))}
     </List>
   );
 
 const ChecklistArticles = props => (
-    <List className="logs-list">
-        {props.articles.map(article => (
-            <ListItem button key={article.id}>
-                <ListItemText primary={article.title} secondary={article.date} />
-            </ListItem>
-        ))}
-    </List>
+    <Paper className="logs-list">
+        <Table>
+            <TableHead>
+                <TableRow>
+                    <TableCell>PGROUP</TableCell>
+                    <TableCell>GRPCODE</TableCell>
+                    <TableCell>ITEMNO</TableCell>
+                    <TableCell>DESC#1</TableCell>
+                    <TableCell>DESC#2</TableCell>
+                    <TableCell>DESC#3</TableCell>
+                    <TableCell>LASTSER#1</TableCell>
+                    <TableCell>PERIOD#1</TableCell>
+                    <TableCell>CURRDEPOT</TableCell>
+                </TableRow>
+            </TableHead>
+            <TableBody>
+                {props.articles.map(n => (
+                    <TableRow key={n.ITEMNO}>
+                        <TableCell>{n.PGROUP}</TableCell>
+                        <TableCell>{n.GRPCODE}</TableCell>
+                        <TableCell>{n.ITEMNO}</TableCell>
+                        <TableCell>{n['DESC#1']}</TableCell>
+                        <TableCell>{n['DESC#2']}</TableCell>
+                        <TableCell>{n['DESC#3']}</TableCell>
+                        <TableCell>{n['LASTSER#1']}</TableCell>
+                        <TableCell>{n['PERIOD#1']}</TableCell>
+                        <TableCell>{n.CURRDEPOT}</TableCell>
+                    </TableRow>
+           ))}
+            </TableBody>
+        </Table>
+    </Paper>
     );
 
 const TabContainer = props => (
@@ -225,7 +252,7 @@ const ViewLogs = props => (
         </AppBar>
         {props.value === 0 &&
             <TabContainer>
-                <LogComponent errors={props.errors} />
+                <LogComponent logs={props.logs} />
             </TabContainer>}
         {props.value === 1 &&
             <TabContainer>
@@ -245,81 +272,94 @@ const ViewLogs = props => (
 ViewLogs.propTypes = {
     onTabsChange: PropTypes.func.isRequired,
     value: PropTypes.number.isRequired,
-    errors: PropTypes.arrayOf(PropTypes.shape({
-        id: PropTypes.number.isRequired,
-        err: PropTypes.string.isRequired,
-        document: PropTypes.string.isRequired,
+    logs: PropTypes.arrayOf(PropTypes.shape({
+        ts: PropTypes.number.isRequired,
+        msg: PropTypes.string.isRequired,
     })).isRequired,
     articles: PropTypes.shape({
         approved: PropTypes.arrayOf(PropTypes.shape({
-            id: PropTypes.number.isRequired,
-            title: PropTypes.string.isRequired,
-            date: PropTypes.string.isRequired,
+            ITEMNO: PropTypes.isRequired,
+            PGROUP: PropTypes.string.isRequired,
+            GRPCODE: PropTypes.string.isRequired,
+            'LASTSER#1': PropTypes.string.isRequired,
+            'PERIOD#1': PropTypes.number.isRequired,
+            CURRDEPOT: PropTypes.string.isRequired,
+            'DESC#1': PropTypes.string.isRequired,
+            'DESC#2': PropTypes.string.isRequired,
+            'DESC#3': PropTypes.string.isRequired,
         })).isRequired,
         unapproved: PropTypes.arrayOf(PropTypes.shape({
-            id: PropTypes.number.isRequired,
-            title: PropTypes.string.isRequired,
-            date: PropTypes.string.isRequired,
+            ITEMNO: PropTypes.isRequired,
+            PGROUP: PropTypes.string.isRequired,
+            GRPCODE: PropTypes.string.isRequired,
+            'LASTSER#1': PropTypes.string.isRequired,
+            'PERIOD#1': PropTypes.number.isRequired,
+            CURRDEPOT: PropTypes.string.isRequired,
+            'DESC#1': PropTypes.string.isRequired,
+            'DESC#2': PropTypes.string.isRequired,
+            'DESC#3': PropTypes.string.isRequired,
         })).isRequired,
         expired: PropTypes.arrayOf(PropTypes.shape({
-            id: PropTypes.number.isRequired,
-            title: PropTypes.string.isRequired,
-            date: PropTypes.string.isRequired,
+            ITEMNO: PropTypes.isRequired,
+            PGROUP: PropTypes.string.isRequired,
+            GRPCODE: PropTypes.string.isRequired,
+            'LASTSER#1': PropTypes.string.isRequired,
+            'PERIOD#1': PropTypes.number.isRequired,
+            CURRDEPOT: PropTypes.string.isRequired,
+            'DESC#1': PropTypes.string.isRequired,
+            'DESC#2': PropTypes.string.isRequired,
+            'DESC#3': PropTypes.string.isRequired,
         })).isRequired,
     }).isRequired,
 };
 
 class App extends React.Component {
     getInitialState: () => {
-      errors: [],
+      logs: [],
       articles: {
         approved: [],
         unapproved: [],
         expired: []
       },
       files: []
-  };
+    };
+
+    componentDidMount() {
+        axios.all([
+            axios.get('http://localhost:5000/stock/approved', { auth: {
+                username: cnf.api.auth.username,
+                password: cnf.api.auth.password,
+            } }),
+            axios.get('http://localhost:5000/stock/unapproved', { auth: {
+                username: cnf.api.auth.username,
+                password: cnf.api.auth.password,
+            } }),
+            axios.get('http://localhost:5000/stock/expired', { auth: {
+                username: cnf.api.auth.username,
+                password: cnf.api.auth.password,
+            } }),
+            axios.get('http://localhost:5000/logs', { auth: {
+                username: cnf.api.auth.username,
+                password: cnf.api.auth.password,
+            } }),
+        ]).then(axios.spread((ares, ures, eres, lres) => {
+            const articles = { approved: ares.data.body, unapproved: ures.data.body, expired: eres.data.body };
+            const logs = lres.data.body;
+
+            this.state.articles = articles;
+            this.state.logs = logs;
+
+            this.setState(this.state);
+        }));
+    }
 
     state = {
         activeLogsTab: 0,
-        errors: [
-          { id: 1, err: 'Something went wrong while processing your request', document: '\\JDJDN01\file01.pdf' },
-          { id: 2, err: 'Something went wrong while processing your request', document: '\\JDJDN01\file01.pdf' },
-          { id: 3, err: 'Something went wrong while processing your request', document: '\\JDJDN01\file01.pdf' },
-          { id: 4, err: 'Something went wrong while processing your request', document: '\\JDJDN01\file01.pdf' },
-          { id: 5, err: 'Something went wrong while processing your request', document: '\\JDJDN01\file01.pdf' },
-          { id: 6, err: 'Something went wrong while processing your request', document: '\\JDJDN01\file01.pdf' },
-          { id: 7, err: 'Something went wrong while processing your request', document: '\\JDJDN01\file01.pdf' },
-          { id: 8, err: 'Something went wrong while processing your request', document: '\\JDJDN01\file01.pdf' },
-          { id: 9, err: 'Something went wrong while processing your request', document: '\\JDJDN01\file01.pdf' },
-          { id: 10, err: 'Something went wrong while processing your request', document: '\\JDJDN01\file01.pdf' },
-          { id: 11, err: 'Something went wrong while processing your request', document: '\\JDJDN01\file01.pdf' },
-          { id: 12, err: 'Something went wrong while processing your request', document: '\\JDJDN01\file01.pdf' },
-          { id: 13, err: 'Something went wrong while processing your request', document: '\\JDJDN01\file01.pdf' },
-          { id: 14, err: 'Something went wrong while processing your request', document: '\\JDJDN01\file01.pdf' },
-        ],
+        logs: [],
         articles: {
-            approved: [
-            { id: 1, title: 'Artikel A55FG90', date: Moment().format('DD-MM-YYYY') },
-            { id: 2, title: 'Artikel A55FG91', date: Moment().format('DD-MM-YYYY') },
-            { id: 3, title: 'Artikel A55FG92', date: Moment().format('DD-MM-YYYY') },
-            { id: 4, title: 'Artikel A55FG93', date: Moment().format('DD-MM-YYYY') },
-            { id: 5, title: 'Artikel A55FG94', date: Moment().format('DD-MM-YYYY') },
-            ],
-            unapproved: [
-            { id: 1, title: 'Artikel HGR41100', date: Moment().format('DD-MM-YYYY') },
-            { id: 2, title: 'Artikel HGR41101', date: Moment().format('DD-MM-YYYY') },
-            { id: 3, title: 'Artikel HGR41102', date: Moment().format('DD-MM-YYYY') },
-            { id: 4, title: 'Artikel HGR41103', date: Moment().format('DD-MM-YYYY') },
-            { id: 5, title: 'Artikel HGR41104', date: Moment().format('DD-MM-YYYY') },
-            ],
-            expired: [
-            { id: 1, title: 'Artikel KRLOO600', date: Moment().format('DD-MM-YYYY') },
-            { id: 2, title: 'Artikel KRLOO601', date: Moment().format('DD-MM-YYYY') },
-            { id: 3, title: 'Artikel KRLOO602', date: Moment().format('DD-MM-YYYY') },
-            { id: 4, title: 'Artikel KRLOO603', date: Moment().format('DD-MM-YYYY') },
-            { id: 5, title: 'Artikel KRLOO604', date: Moment().format('DD-MM-YYYY') },
-            ],
+            approved: [],
+            unapproved: [],
+            expired: [],
         },
     };
 
@@ -341,7 +381,7 @@ class App extends React.Component {
                 <FileManager />
                 <Grid item xs={12}>
                     <ViewLogs
-                        errors={this.state.errors}
+                        logs={this.state.logs}
                         articles={this.state.articles}
                         value={this.state.activeLogsTab}
                         onTabsChange={this.onLogTabsChange} />
