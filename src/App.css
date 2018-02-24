@@ -50,6 +50,10 @@
   margin-bottom: 20px;
 }
 
+.csv-mapping-field-label {
+  margin-top: 20px;
+}
+
 
 .logs-list button a {
   text-decoration: none;

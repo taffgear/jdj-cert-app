@@ -3,6 +3,8 @@ import PropTypes from 'prop-types';
 import Moment from 'moment';
 import Find from 'lodash/find';
 import Size from 'lodash/size';
+import Reduce from 'lodash/reduce';
+import Papa from 'papaparse';
 import ScrollArea from 'react-scrollbar';
 import Grid from 'material-ui/Grid';
 import AppBar from 'material-ui/AppBar';
@@ -17,6 +19,10 @@ import Card, { CardContent } from 'material-ui/Card';
 import { FormGroup } from 'material-ui/Form';
 import Checkbox from 'material-ui/Checkbox';
 import TextField from 'material-ui/TextField';
+import { InputLabel } from 'material-ui/Input';
+// import SelectField from 'material-ui/Select';
+import Select from 'material-ui/Select';
+import { MenuItem } from 'material-ui/Menu';
 import Dialog, {
   DialogActions,
   DialogContent,
@@ -49,10 +55,48 @@ const FileManager = React.createClass({
             items: [],
             files: [],
             queue: [],
+            csv_mapping_fields: [
+              { label: 'Getest bij', name: 'testedWith', value: '', columnIndex: 105 },
+              { label: 'Klant naam', name: 'customerName', value: '', columnIndex: 2 },
+              { label: 'Klant adres 1', name: 'customerAddress1', value: '', columnIndex: 3 },
+              { label: 'Klant adres 2', name: 'customerAddress2', value: '', columnIndex: 4 },
+              { label: 'Klant adres 3', name: 'customerAddress3', value: '', columnIndex: 5 },
+              { label: 'Klant adres 4', name: 'customerAddress4', value: '', columnIndex: 6 },
+              { label: 'Klant postcode', name: 'customerPostcode', value: '', columnIndex: 7 },
+              { label: 'PAT Model', name: 'PATModel', value: '', columnIndex: 0 },
+              { label: 'PAT Serienummer', name: 'PATSerialnumber', value: '', columnIndex: 1 },
+              { label: 'Artikel nummer', name: 'articleNumber', value: '', columnIndex: 19 },
+              { label: 'Artikel Serienummer', name: 'articleSerialnumber', value: '', columnIndex: 20 },
+              { label: 'Testgroep', name: 'testGroup', value: '', columnIndex: 14 },
+              { label: 'Testgroep spanning', name: 'testGroupVoltage', value: '', columnIndex: 15 },
+              { label: 'Testgroep omschrijving', name: 'testGroupDescription', value: '', columnIndex: 17 },
+              { label: 'Testgroep status', name: 'testGroupStatus', value: '', columnIndex: 16 },
+              { label: 'Test #1', name: 'test1', value: '', columnIndex: 41 },
+              { label: 'Test #2', name: 'test2', value: '', columnIndex: 42 },
+              { label: 'Test #3', name: 'test3', value: '', columnIndex: 43 },
+              { label: 'Test #4', name: 'test4', value: '', columnIndex: 44 },
+              { label: 'Test #5', name: 'test5', value: '', columnIndex: 45 },
+              { label: 'Test #6', name: 'test6', value: '', columnIndex: 46 },
+              { label: 'Test #7', name: 'test7', value: '', columnIndex: 47 },
+              { label: 'Test #8', name: 'test8', value: '', columnIndex: 48 },
+            ],
+            csv_headers: [],
+            csv_data: [],
+            csv_data_mapped: [],
+            csv_dialog_open: false,
         };
     },
 
     onDrop(files) {
+        files.forEach((f, index) => {
+            if (f.type === 'text/csv') {
+                files.splice(index, 1);
+                return this.processCSVFile(f);
+            }
+
+            return f;
+        });
+
         const filesWithIds = files.map(f => ({ id: shortid.generate(), file: f }));
         this.state.items = this.state.items.concat(filesWithIds);
         this.setState(this.state);
@@ -118,6 +162,82 @@ const FileManager = React.createClass({
         });
     },
 
+    handleCSVDialogClose() {
+        this.state.csv_dialog_open = false;
+        this.setState(this.state);
+    },
+
+    handleCSVSave() {
+        const fields = this.state.csv_mapping_fields;
+
+        this.state.csv_data_mapped = Reduce(this.state.csv_data, (acc, arr) => {
+            const row = {};
+
+            fields.forEach((field) => {
+                row[field.name] = (field.columnIndex >= 0 && arr[field.columnIndex] ? arr[field.columnIndex] : '');
+            });
+
+            acc.push(row);
+
+            return acc;
+        }, []);
+
+        axios.post('http://localhost:5000/csv', { csv_data_mapped: this.state.csv_data_mapped }, {
+            auth: {
+                username: cnf.api.auth.username,
+                password: cnf.api.auth.password,
+            } })
+            .then(() => {
+                this.state.csv_dialog_open = false;
+                this.state.csv_data_mapped = [];
+                this.setState(this.state);
+            });
+    },
+
+    handleCSVSelectChange(event, index) {
+        const value = event.target.value;
+        const columnIndex = this.state.csv_headers.indexOf(value);
+
+        this.state.csv_mapping_fields[index].value = value;
+
+        if (columnIndex >= 0) { this.state.csv_mapping_fields[index].columnIndex = columnIndex; }
+
+        this.setState(this.state);
+    },
+
+    processCSVFile(local) {
+        Papa.parse(local, { complete: (results) => {
+            console.log('Parsing complete:', results);
+
+            const headers = results.data[0];
+
+            if (headers && headers.length) {
+                results.data.splice(0, 1);
+
+                this.state.csv_mapping_fields = Reduce(this.state.csv_mapping_fields, (acc, field) => {
+                    const mappingField = field;
+
+                    if (field.columnIndex >= 0 && headers[field.columnIndex]) {
+                        mappingField.value = headers[field.columnIndex];
+                    }
+
+                    acc.push(mappingField);
+
+                    return acc;
+                }, []);
+
+                this.state.csv_headers = headers;
+                this.state.csv_data = results.data;
+                this.state.csv_dialog_open = true;
+
+                this.setState(this.state);
+            }
+
+            return false;
+        },
+        });
+    },
+
     render() {
         return (
             <Grid className="filemanager" container spacing={0}>
@@ -129,7 +249,7 @@ const FileManager = React.createClass({
                                 <div className="dropzone">
                                     <Dropzone
                                         onDrop={this.onDrop}
-                                        accept="application/pdf">
+                                        accept="application/pdf, text/csv">
                                         <p>Sleep bestanden in dit vak of klik op
                                         de plus knop om bestanden te selecteren.
                                         </p>
@@ -179,6 +299,13 @@ const FileManager = React.createClass({
                         </CardContent>
                     </Card>
                 </Grid>
+                <CSVConfiguratorComponent
+                    open={this.state.csv_dialog_open}
+                    fields={this.state.csv_mapping_fields}
+                    csv_headers={this.state.csv_headers}
+                    handleClose={this.handleCSVDialogClose}
+                    handleSave={this.handleCSVSave}
+                    handleChange={this.handleCSVSelectChange} />
             </Grid>
         );
     },
@@ -187,6 +314,49 @@ const FileManager = React.createClass({
 FileManager.propTypes = {
     onprocessed: PropTypes.func.isRequired,
 };
+
+const CSVConfiguratorComponent = props => (
+    <div>
+        <Dialog
+            open={props.open}
+            onClose={props.handleClose}
+            aria-labelledby="form-dialog-title">
+            <DialogTitle id="form-dialog-title">CSV Mapping maken</DialogTitle>
+            <DialogContent>
+                <DialogContentText>
+             Selecteer voor elke veldnaam hieronder een kolom naam uit het CSV bestand.
+                </DialogContentText>
+                <Divider />
+                <br />
+                {props.fields.map((field, index) => (
+                    <FormGroup className="csv-mapping-field" key={field.name}>
+                        <InputLabel className="csv-mapping-field-label" htmlFor={field.name}>{field.label}</InputLabel>
+                        <Select
+                            value={field.value}
+                            onChange={e => props.handleChange(e, index)}
+                            inputProps={{
+                                name: field.name,
+                                id: field.name,
+                            }}>
+                            {props.csv_headers.map(col => (
+                                <MenuItem key={col} value={col}>{col}</MenuItem>
+      ))}
+                        </Select>
+                    </FormGroup>
+         ))}
+
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={props.handleClose} color="primary">
+             Annuleren
+                </Button>
+                <Button onClick={props.handleSave} color="primary">
+             Opslaan
+                </Button>
+            </DialogActions>
+        </Dialog>
+    </div>
+    );
 
 const SettingsComponent = props => (
     <div>
