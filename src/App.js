@@ -69,6 +69,7 @@ const FileManager = React.createClass({
               { label: 'PAT Serienummer', name: 'PATSerialnumber', value: '', columnIndex: 1 },
               { label: 'Artikel nummer', name: 'articleNumber', value: '', columnIndex: 19 },
               { label: 'Artikel Serienummer', name: 'articleSerialnumber', value: '', columnIndex: 20 },
+              { label: 'Artikel omschrijving', name: 'articleDescription', value: '', columnIndex: 21 },
               { label: 'Testgroep', name: 'testGroup', value: '', columnIndex: 14 },
               { label: 'Testgroep spanning', name: 'testGroupVoltage', value: '', columnIndex: 15 },
               { label: 'Testgroep omschrijving', name: 'testGroupDescription', value: '', columnIndex: 17 },
