@@ -57,6 +57,7 @@ const FileManager = React.createClass({
             queue: [],
             csv_mapping_fields: [
               { label: 'Test datum', name: 'testDate', value: '', columnIndex: 28 },
+              { label: 'Test tijd', name: 'testTime', value: '', columnIndex: 29 },
               { label: 'Getest bij', name: 'testedWith', value: '', columnIndex: 105 },
               { label: 'Klant naam', name: 'customerName', value: '', columnIndex: 2 },
               { label: 'Klant adres 1', name: 'customerAddress1', value: '', columnIndex: 3 },
