@@ -56,6 +56,7 @@ const FileManager = React.createClass({
             files: [],
             queue: [],
             csv_mapping_fields: [
+              { label: 'Test datum', name: 'testDate', value: '', columnIndex: 28 },
               { label: 'Getest bij', name: 'testedWith', value: '', columnIndex: 105 },
               { label: 'Klant naam', name: 'customerName', value: '', columnIndex: 2 },
               { label: 'Klant adres 1', name: 'customerAddress1', value: '', columnIndex: 3 },
@@ -80,6 +81,7 @@ const FileManager = React.createClass({
               { label: 'Test #7', name: 'test7', value: '', columnIndex: 47 },
               { label: 'Test #8', name: 'test8', value: '', columnIndex: 48 },
             ],
+            csv_file_name: '',
             csv_headers: [],
             csv_data: [],
             csv_data_mapped: [],
@@ -182,14 +184,22 @@ const FileManager = React.createClass({
             return acc;
         }, []);
 
-        axios.post('http://localhost:5000/csv', { csv_data_mapped: this.state.csv_data_mapped }, {
+        const csv = Papa.unparse(this.state.csv_data_mapped);
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const formData = new FormData();
+
+        formData.append('documents', blob, this.state.csv_file_name);
+
+        axios.post('http://localhost:5000/files', formData, {
             auth: {
                 username: cnf.api.auth.username,
                 password: cnf.api.auth.password,
             } })
             .then(() => {
+                this.state.csv_file_name = '';
                 this.state.csv_dialog_open = false;
                 this.state.csv_data_mapped = [];
+                this.state.csv_headers = [];
                 this.setState(this.state);
             });
     },
@@ -207,8 +217,6 @@ const FileManager = React.createClass({
 
     processCSVFile(local) {
         Papa.parse(local, { complete: (results) => {
-            console.log('Parsing complete:', results);
-
             const headers = results.data[0];
 
             if (headers && headers.length) {
@@ -226,6 +234,7 @@ const FileManager = React.createClass({
                     return acc;
                 }, []);
 
+                this.state.csv_file_name = local.name.toLowerCase();
                 this.state.csv_headers = headers;
                 this.state.csv_data = results.data;
                 this.state.csv_dialog_open = true;
