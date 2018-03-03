@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import Moment from 'moment';
+import openSocket from 'socket.io-client';
 import Find from 'lodash/find';
 import Size from 'lodash/size';
 import Reduce from 'lodash/reduce';
@@ -14,13 +15,11 @@ import Button from 'material-ui/Button';
 import AddIcon from 'material-ui-icons/Add';
 import DeleteIcon from 'material-ui-icons/Delete';
 import IconButton from 'material-ui/IconButton';
-// import MenuIcon from 'material-ui-icons/Menu';
 import Card, { CardContent } from 'material-ui/Card';
 import { FormGroup } from 'material-ui/Form';
 import Checkbox from 'material-ui/Checkbox';
 import TextField from 'material-ui/TextField';
 import { InputLabel } from 'material-ui/Input';
-// import SelectField from 'material-ui/Select';
 import Select from 'material-ui/Select';
 import { MenuItem } from 'material-ui/Menu';
 import Dialog, {
@@ -38,7 +37,6 @@ import List, {
 import Table, { TableBody, TableCell, TableHead, TableRow } from 'material-ui/Table';
 import Paper from 'material-ui/Paper';
 import Divider from 'material-ui/Divider';
-// import Icon from 'material-ui/Icon';
 import Dropzone from 'react-dropzone';
 import shortid from 'shortid';
 import axios from 'axios';
@@ -48,6 +46,8 @@ import { CSVLink } from 'react-csv';
 import './App.css';
 
 import cnf from '../config.json';
+
+const apiURI = cnf.api.uri;
 
 const FileManager = React.createClass({
     getInitialState() {
@@ -136,7 +136,7 @@ const FileManager = React.createClass({
             formData.append('documents', file);
         });
 
-        axios.post('http://localhost:5000/files', formData, {
+        axios.post(`${apiURI}/files`, formData, {
             auth: {
                 username: cnf.api.auth.username,
                 password: cnf.api.auth.password,
@@ -150,8 +150,6 @@ const FileManager = React.createClass({
                 this.state.queue = [];
 
                 this.setState(this.state);
-
-                setTimeout(this.props.onprocessed, 5000);
             })
             .catch(console.log)
       ;
@@ -192,7 +190,7 @@ const FileManager = React.createClass({
 
         formData.append('documents', blob, this.state.csv_file_name);
 
-        axios.post('http://localhost:5000/files', formData, {
+        axios.post(`${apiURI}/files`, formData, {
             auth: {
                 username: cnf.api.auth.username,
                 password: cnf.api.auth.password,
@@ -260,7 +258,7 @@ const FileManager = React.createClass({
                                 <div className="dropzone">
                                     <Dropzone
                                         onDrop={this.onDrop}
-                                        accept="application/pdf, text/csv">
+                                        accept="text/csv, application/pdf, ">
                                         <p>Sleep bestanden in dit vak of klik op
                                         de plus knop om bestanden te selecteren.
                                         </p>
@@ -331,6 +329,7 @@ const CSVConfiguratorComponent = props => (
         <Dialog
             open={props.open}
             onClose={props.handleClose}
+            fullScreen
             aria-labelledby="form-dialog-title">
             <DialogTitle id="form-dialog-title">CSV Mapping maken</DialogTitle>
             <DialogContent>
@@ -432,7 +431,7 @@ const LogComponent = props => (
                 {props.logs.map(n => (
                     <TableRow key={n.ts}>
                         <TableCell>{n.msg}</TableCell>
-                        <TableCell>{Moment.unix(n.ts).format('DD-MM-YYYY HH:mm:ss')}</TableCell>
+                        <TableCell>{Moment(n.ts, 'x').format('DD-MM-YYYY HH:mm:ss')}</TableCell>
                     </TableRow>
          ))}
             </TableBody>
@@ -462,14 +461,14 @@ const ChecklistArticles = props => (
             </TableHead>
             <TableBody>
                 {props.articles.map(n => (
-                    <TableRow key={n.ITEMNO}>
+                    <TableRow key={n.RECID}>
                         <TableCell>{n.PGROUP}</TableCell>
                         <TableCell>{n.GRPCODE}</TableCell>
                         <TableCell>{n.ITEMNO}</TableCell>
                         <TableCell>{n['DESC#1']}</TableCell>
                         <TableCell>{n['DESC#2']}</TableCell>
                         <TableCell>{n['DESC#3']}</TableCell>
-                        <TableCell>{n['LASTSER#1']}</TableCell>
+                        <TableCell>{Moment(n['LASTSER#1']).format('DD-MM-YYYY HH:mm:ss')}</TableCell>
                         <TableCell>{n['PERIOD#1']}</TableCell>
                         <TableCell>{n.CURRDEPOT}</TableCell>
                     </TableRow>
@@ -503,7 +502,7 @@ const ViewLogs = props => (
                 onChange={props.onTabsChange}
                 indicatorColor="primary"
                 textColor="primary">
-                <Tab label="Foutmeldingen" />
+                <Tab label="Meldingen" />
                 <Tab label="Gekeurde artikelen" />
                 <Tab label="Ongekeurde artikelen" />
                 <Tab label="Verlopen artikelen" />
@@ -537,6 +536,7 @@ ViewLogs.propTypes = {
     })).isRequired,
     articles: PropTypes.shape({
         approved: PropTypes.arrayOf(PropTypes.shape({
+            RECID: PropTypes.string.isRequired,
             ITEMNO: PropTypes.isRequired,
             PGROUP: PropTypes.string.isRequired,
             GRPCODE: PropTypes.string.isRequired,
@@ -548,6 +548,7 @@ ViewLogs.propTypes = {
             'DESC#3': PropTypes.string.isRequired,
         })).isRequired,
         unapproved: PropTypes.arrayOf(PropTypes.shape({
+            RECID: PropTypes.string.isRequired,
             ITEMNO: PropTypes.isRequired,
             PGROUP: PropTypes.string.isRequired,
             GRPCODE: PropTypes.string.isRequired,
@@ -559,6 +560,7 @@ ViewLogs.propTypes = {
             'DESC#3': PropTypes.string.isRequired,
         })).isRequired,
         expired: PropTypes.arrayOf(PropTypes.shape({
+            RECID: PropTypes.string.isRequired,
             ITEMNO: PropTypes.isRequired,
             PGROUP: PropTypes.string.isRequired,
             GRPCODE: PropTypes.string.isRequired,
@@ -579,11 +581,11 @@ const getArticlesLogs = () => {
     } };
 
     return axios.all([
-        axios.get('http://localhost:5000/stock/approved', opts),
-        axios.get('http://localhost:5000/stock/unapproved', opts),
-        axios.get('http://localhost:5000/stock/expired', opts),
-        axios.get('http://localhost:5000/logs', opts),
-        axios.get('http://localhost:5000/settings', opts),
+        axios.get(`${apiURI}/stock/approved`, opts),
+        axios.get(`${apiURI}/stock/unapproved`, opts),
+        axios.get(`${apiURI}/stock/expired`, opts),
+        axios.get(`${apiURI}/logs`, opts),
+        axios.get(`${apiURI}/settings`, opts),
     ]).then(axios.spread((ares, ures, eres, lres, sres) => {
         const articles = { approved: ares.data.body, unapproved: ures.data.body, expired: eres.data.body };
         const logs = lres.data.body;
@@ -604,6 +606,22 @@ class App extends React.Component {
       files: []
     };
 
+    subscribeToSocketEvents() {
+        const socket = openSocket(cnf.webhook_worker.uri);
+
+        socket.on('log', (msg) => {
+            console.log(msg);
+            this.state.logs.unshift(msg);
+            this.setState(this.state);
+        });
+
+        socket.on('stockItem', (stockItem) => {
+            console.log(stockItem);
+            this.state.articles.approved.unshift(stockItem);
+            this.setState(this.state);
+        });
+    }
+
     componentDidMount() {
         getArticlesLogs().then((result) => {
             this.state.articles = result.articles;
@@ -612,6 +630,8 @@ class App extends React.Component {
             this.state.settings.fixed_date = result.settings.fixed_date;
 
             this.setState(this.state);
+
+            this.subscribeToSocketEvents();
         });
     }
 
