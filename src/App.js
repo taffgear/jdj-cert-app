@@ -15,6 +15,7 @@ import Button from 'material-ui/Button';
 import AddIcon from 'material-ui-icons/Add';
 import DeleteIcon from 'material-ui-icons/Delete';
 import IconButton from 'material-ui/IconButton';
+import CloseIcon from 'material-ui-icons/Close';
 import Card, { CardContent } from 'material-ui/Card';
 import { FormGroup } from 'material-ui/Form';
 import Checkbox from 'material-ui/Checkbox';
@@ -28,6 +29,7 @@ import Dialog, {
   DialogContentText,
   DialogTitle,
 } from 'material-ui/Dialog';
+import Slide from 'material-ui/transitions/Slide';
 import Tabs, { Tab } from 'material-ui/Tabs';
 import List, {
   ListItem,
@@ -37,6 +39,8 @@ import List, {
 import Table, { TableBody, TableCell, TableHead, TableRow } from 'material-ui/Table';
 import Paper from 'material-ui/Paper';
 import Divider from 'material-ui/Divider';
+import { CircularProgress } from 'material-ui/Progress';
+import Snackbar from 'material-ui/Snackbar';
 import Dropzone from 'react-dropzone';
 import shortid from 'shortid';
 import axios from 'axios';
@@ -95,7 +99,8 @@ const FileManager = React.createClass({
         files.forEach((f, index) => {
             if (f.type === 'text/csv') {
                 files.splice(index, 1);
-                return this.processCSVFile(f);
+                this.props.onprogress(true);
+                setTimeout(() => this.processCSVFile(f), 1000);
             }
 
             return f;
@@ -150,12 +155,19 @@ const FileManager = React.createClass({
                 this.state.queue = [];
 
                 this.setState(this.state);
+
+                setTimeout(() => {
+                    this.props.onprogress(false);
+                    this.props.onprocessed('De geselecteerde bestanden wordt verwerkt.');
+                }, 1000);
             })
             .catch(console.log)
       ;
     },
 
     onProcessFilesClick() {
+        this.props.onprogress(true);
+
         this.state.items.forEach((item) => {
             if (!item.selected) return;
 
@@ -165,11 +177,16 @@ const FileManager = React.createClass({
     },
 
     handleCSVDialogClose() {
+        this.state.csv_file_name = '';
         this.state.csv_dialog_open = false;
+        this.state.csv_data_mapped = [];
+        this.state.csv_headers = [];
         this.setState(this.state);
     },
 
     handleCSVSave() {
+        this.props.onprogress(true);
+
         const fields = this.state.csv_mapping_fields;
 
         this.state.csv_data_mapped = Reduce(this.state.csv_data, (acc, arr) => {
@@ -201,6 +218,11 @@ const FileManager = React.createClass({
                 this.state.csv_data_mapped = [];
                 this.state.csv_headers = [];
                 this.setState(this.state);
+
+                setTimeout(() => {
+                    this.props.onprogress(false);
+                    this.props.onprocessed('CSV bestand is verstuurd naar de server.');
+                }, 1000);
             });
     },
 
@@ -233,6 +255,7 @@ const FileManager = React.createClass({
 
                     return acc;
                 }, []);
+                this.props.onprogress(false);
 
                 this.state.csv_file_name = local.name.toLowerCase();
                 this.state.csv_headers = headers;
@@ -324,21 +347,35 @@ FileManager.propTypes = {
     onprocessed: PropTypes.func.isRequired,
 };
 
+const Transition = props => <Slide direction="up" {...props} />;
+
 const CSVConfiguratorComponent = props => (
     <div>
         <Dialog
             open={props.open}
             onClose={props.handleClose}
+            transition={Transition}
             fullScreen
             aria-labelledby="form-dialog-title">
-            <DialogTitle id="form-dialog-title">CSV Mapping maken</DialogTitle>
-            <DialogContent>
+            <AppBar className="appBar">
+                <Toolbar>
+                    <IconButton color="inherit" onClick={props.handleClose} aria-label="Sluiten">
+                        <CloseIcon />
+                    </IconButton>
+                    <Typography type="title" color="inherit" className="flex">
+                CSV Mapping maken
+                    </Typography>
+                    <Button color="inherit" onClick={props.handleSave}>
+                Verwerken
+                    </Button>
+                </Toolbar>
+            </AppBar>
+            <DialogContent className="dialogContent">
                 <DialogContentText>
-             Selecteer voor elke veldnaam hieronder een kolom naam uit het CSV bestand.
+                      Selecteer voor elke veldnaam hieronder een kolom naam uit het CSV bestand.
                 </DialogContentText>
-                <Divider />
-                <br />
                 {props.fields.map((field, index) => (
+
                     <FormGroup className="csv-mapping-field" key={field.name}>
                         <InputLabel className="csv-mapping-field-label" htmlFor={field.name}>{field.label}</InputLabel>
                         <Select
@@ -356,14 +393,6 @@ const CSVConfiguratorComponent = props => (
          ))}
 
             </DialogContent>
-            <DialogActions>
-                <Button onClick={props.handleClose} color="primary">
-             Annuleren
-                </Button>
-                <Button onClick={props.handleSave} color="primary">
-             Opslaan
-                </Button>
-            </DialogActions>
         </Dialog>
     </div>
     );
@@ -623,11 +652,14 @@ class App extends React.Component {
     }
 
     componentDidMount() {
+        this.updateProgress(true);
+
         getArticlesLogs().then((result) => {
             this.state.articles = result.articles;
             this.state.logs = result.logs;
             this.state.settings.watch_dir = result.settings.watch_dir;
             this.state.settings.fixed_date = result.settings.fixed_date;
+            this.state.loading = false;
 
             this.setState(this.state);
 
@@ -648,6 +680,13 @@ class App extends React.Component {
             watch_dir: '',
             fixed_date: '',
         },
+        loading: false,
+        snackbar: {
+            open: false,
+            message: '',
+            vertical: 'top',
+            horizontal: 'left',
+        },
     };
 
     onLogTabsChange = (event, value) => {
@@ -655,13 +694,15 @@ class App extends React.Component {
         this.setState(this.state);
     };
 
-    onFilesProcessed = () => {
-        getArticlesLogs().then((result) => {
-            this.state.articles = result.articles;
-            this.state.logs = result.logs;
+    updateProgress = (loading) => {
+        this.state.loading = loading;
+        this.setState(this.state);
+    };
 
-            this.setState(this.state);
-        });
+    handleSnackbarClose = () => {
+        this.state.snackbar.open = false;
+        this.state.snackbar.message = '';
+        this.setState(this.state);
     };
 
     handleSettingsOpen = () => {
@@ -685,29 +726,65 @@ class App extends React.Component {
     }
 
     handleSettingsSave = () => {
+        this.state.settings.open = false;
+        this.updateProgress(true);
+
         axios.put('http://localhost:5000/settings', this.state.settings, {
             auth: {
                 username: cnf.api.auth.username,
                 password: cnf.api.auth.password,
             } })
             .then(() => {
-                this.state.settings.open = false;
-                this.setState(this.state);
+                this.state.loading = false;
+                setTimeout(() => {
+                    this.state.snackbar.message = 'Instellingen zijn opgeslagen.';
+                    this.state.snackbar.open = true;
+                    this.setState(this.state);
+                }, 1000);
             });
     };
+
+    onFilesProcessed = (msg) => {
+        this.state.snackbar.message = msg;
+        this.state.snackbar.open = true;
+        this.setState(this.state);
+    }
 
     render() {
         return (
             <div className="App">
-                <AppBar position="static">
+                {this.state.loading && <CircularProgress size={68} className="progress" />}
+                <Snackbar
+                    anchorOrigin={
+                    { vertical: this.state.snackbar.vertical,
+                        horizontal: this.state.snackbar.horizontal,
+                    }
+                    }
+                    open={this.state.snackbar.open}
+                    autoHideDuration={6000}
+                    onClose={this.handleSnackbarClose}
+                    SnackbarContentProps={{
+                        'aria-describedby': 'message-id',
+                    }}
+                    message={<span id="message-id">{this.state.snackbar.message}</span>}
+                    action={[
+                        <IconButton
+                            key="close"
+                            aria-label="Close"
+                            color="inherit"
+                            onClick={this.handleSnackbarClose}>
+                            <CloseIcon />
+                        </IconButton>,
+                    ]} />
+                <AppBar position="static" className="appBar">
                     <Toolbar>
-                        <Typography type="title" color="inherit">
+                        <Typography type="title" color="inherit" className="flex">
                           J de Jonge certificaten
                         </Typography>
                         <Button color="inherit" onClick={this.handleSettingsOpen}>Instellingen</Button>
                     </Toolbar>
                 </AppBar>
-                <FileManager onprocessed={this.onFilesProcessed} />
+                <FileManager onprocessed={this.onFilesProcessed} onprogress={this.updateProgress} />
                 <Grid item xs={12}>
                     <ViewLogs
                         logs={this.state.logs}

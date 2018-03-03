@@ -1,5 +1,17 @@
-.App {
-
+.appBar {
+  position: relative;
+}
+.flex {
+  flex: 1;
+}
+.dialogContent {
+  margin-top: 100px;
+}
+.progress {
+  position: absolute;
+  z-index: 1;
+  top: calc(50% - 68px);
+  left: calc(50% - 68px);
 }
 
 .filemanager .top-left, .filemanager .top-right {
