@@ -5,6 +5,7 @@ import openSocket from 'socket.io-client';
 import Find from 'lodash/find';
 import Size from 'lodash/size';
 import Reduce from 'lodash/reduce';
+import Omit from 'lodash/omit';
 import Papa from 'papaparse';
 import ScrollArea from 'react-scrollbar';
 import Grid from 'material-ui/Grid';
@@ -45,7 +46,6 @@ import Dropzone from 'react-dropzone';
 import shortid from 'shortid';
 import axios from 'axios';
 import findIndex from 'lodash/findIndex';
-import { CSVLink } from 'react-csv';
 
 import './App.css';
 
@@ -159,7 +159,7 @@ const FileManager = React.createClass({
 
                 setTimeout(() => {
                     this.props.onprogress(false);
-                    this.props.onprocessed('De geselecteerde bestanden wordt verwerkt.');
+                    this.props.onprocessed('De geselecteerde bestanden worden verwerkt.');
                 }, 1000);
             })
             .catch(console.log)
@@ -471,8 +471,8 @@ const LogComponent = props => (
 
 const ChecklistArticles = props => (
     <Paper className="logs-list">
-        <Button raised color="primary">
-            <CSVLink data={props.articles} filename={`${props.type}.csv`}>Exporteer als CSV</CSVLink>
+        <Button onClick={() => props.downloadCSV(props.type)} raised color="primary">
+            Exporteer als CSV
         </Button>
 
         <Table>
@@ -544,15 +544,15 @@ const ViewLogs = props => (
             </TabContainer>}
         {props.value === 1 &&
             <TabContainer>
-                <ChecklistArticles type="approved" articles={props.articles.approved} />
+                <ChecklistArticles type="approved" articles={props.articles.approved} downloadCSV={props.downloadCSV} />
             </TabContainer>}
         {props.value === 2 &&
             <TabContainer>
-                <ChecklistArticles type="unapproved" articles={props.articles.unapproved} />
+                <ChecklistArticles type="unapproved" articles={props.articles.unapproved} downloadCSV={props.downloadCSV} />
             </TabContainer>}
         {props.value === 3 &&
             <TabContainer>
-                <ChecklistArticles type="expired" articles={props.articles.expired} />
+                <ChecklistArticles type="expired" articles={props.articles.expired} downloadCSV={props.downloadCSV} />
             </TabContainer>}
     </div>
     );
@@ -610,10 +610,12 @@ const getArticlesLogs = () => {
         password: cnf.api.auth.password,
     } };
 
+    const limit = cnf.max_articles;
+
     return axios.all([
-        axios.get(`${apiURI}/stock/approved`, opts),
-        axios.get(`${apiURI}/stock/unapproved`, opts),
-        axios.get(`${apiURI}/stock/expired`, opts),
+        axios.get(`${apiURI}/stock/approved/${limit}`, opts),
+        axios.get(`${apiURI}/stock/unapproved/${limit}`, opts),
+        axios.get(`${apiURI}/stock/expired/${limit}`, opts),
         axios.get(`${apiURI}/logs`, opts),
         axios.get(`${apiURI}/settings`, opts),
     ]).then(axios.spread((ares, ures, eres, lres, sres) => {
@@ -625,8 +627,18 @@ const getArticlesLogs = () => {
     }));
 };
 
+const getAllArticles = (type) => {
+    const opts = { auth: {
+        username: cnf.api.auth.username,
+        password: cnf.api.auth.password,
+    } };
+
+    return axios.get(`${apiURI}/stock/${type}/0`, opts).then(res => res.data.body);
+};
+
 class App extends React.Component {
     getInitialState: () => {
+      socket: null,
       logs: [],
       articles: {
         approved: [],
@@ -637,19 +649,23 @@ class App extends React.Component {
     };
 
     subscribeToSocketEvents() {
-        const socket = openSocket(cnf.webhook_worker.uri);
+        this.state.socket = openSocket(cnf.webhook_worker.uri);
 
-        socket.on('log', (msg) => {
-            console.log(msg);
-            this.state.logs.unshift(msg);
-            this.setState(this.state);
+        this.state.socket.on('log', (msg) => {
+            const logs = this.state.logs;
+
+            logs.unshift(msg);
+            this.setState({ logs });
         });
 
-        socket.on('stockItem', (stockItem) => {
-            console.log(stockItem);
-            this.state.articles.approved.unshift(stockItem);
-            this.setState(this.state);
+        this.state.socket.on('stockItem', (stockItem) => {
+            const articles = this.state.articles;
+
+            articles.approved.unshift(stockItem);
+            this.setState({ articles });
         });
+
+        this.setState(this.state);
     }
 
     componentDidMount() {
@@ -700,6 +716,24 @@ class App extends React.Component {
         this.setState(this.state);
     };
 
+    downloadArticles = (type) => {
+        this.updateProgress(true);
+
+        return getAllArticles(type).then((articles) => {
+            const csv = Papa.unparse(articles);
+
+            const csvData = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const csvURL = window.URL.createObjectURL(csvData);
+            const tempLink = document.createElement('a');
+
+            tempLink.href = csvURL;
+            tempLink.setAttribute('download', `${type}-articles.csv`);
+            tempLink.click();
+
+            this.updateProgress(false);
+        });
+    };
+
     handleSnackbarClose = () => {
         this.state.snackbar.open = false;
         this.state.snackbar.message = '';
@@ -730,12 +764,14 @@ class App extends React.Component {
         this.state.settings.open = false;
         this.updateProgress(true);
 
-        axios.put('http://localhost:5000/settings', this.state.settings, {
+        axios.put(`${apiURI}/settings`, this.state.settings, {
             auth: {
                 username: cnf.api.auth.username,
                 password: cnf.api.auth.password,
             } })
             .then(() => {
+                this.state.socket.emit('settings', Omit(this.state.settings, 'open'));
+
                 this.state.loading = false;
                 setTimeout(() => {
                     this.state.snackbar.message = 'Instellingen zijn opgeslagen.';
@@ -791,7 +827,8 @@ class App extends React.Component {
                         logs={this.state.logs}
                         articles={this.state.articles}
                         value={this.state.activeLogsTab}
-                        onTabsChange={this.onLogTabsChange} />
+                        onTabsChange={this.onLogTabsChange}
+                        downloadCSV={this.downloadArticles} />
                 </Grid>
                 <SettingsComponent
                     handleClose={this.handleSettingsClose}
