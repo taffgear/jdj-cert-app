@@ -136,8 +136,8 @@ const FileManager = React.createClass({
 
             if (this.state.files.length === this.state.queue.length) { this.upload(); }
         };
-        reader.onabort = () => console.log('file reading was aborted');
-        reader.onerror = () => console.log('file reading has failed');
+        // reader.onabort = () => console.log('file reading was aborted');
+        // reader.onerror = () => console.log('file reading has failed');
 
         reader.readAsDataURL(file);
     },
@@ -488,7 +488,7 @@ const ChecklistArticles = props => (
         <Table>
             <TableHead>
                 <TableRow>
-                    <TableCell>PGROUP</TableCell>
+                    <TableCell>Groep</TableCell>
                     <TableCell>GRPCODE</TableCell>
                     <TableCell>ITEMNO</TableCell>
                     <TableCell>DESC#1</TableCell>
@@ -691,21 +691,18 @@ class App extends React.Component {
 
                     if (aindex >= 0) {
                         articles.approved.splice(aindex, 1);
-                        console.log('REMOVE APPROVED');
                     }
 
                     const uindex = FindIndex(articles.unapproved, { ITEMNO: a.ITEMNO });
 
                     if (uindex >= 0) {
                         articles.unapproved.splice(uindex, 1);
-                        console.log('REMOVE UNAPPROVED');
                     }
 
                     const eindex = FindIndex(articles.expired, { ITEMNO: a.ITEMNO });
 
                     if (eindex >= 0) {
                         articles.expired.splice(eindex, 1);
-                        console.log('REMOVE EXPIRED');
                     }
 
                     articles.approved.unshift(a);
