@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import Moment from 'moment';
 import openSocket from 'socket.io-client';
 import Find from 'lodash/find';
+import FindIndex from 'lodash/findIndex';
 import Size from 'lodash/size';
 import Reduce from 'lodash/reduce';
 import Omit from 'lodash/omit';
@@ -45,7 +46,6 @@ import Snackbar from 'material-ui/Snackbar';
 import Dropzone from 'react-dropzone';
 import shortid from 'shortid';
 import axios from 'axios';
-import findIndex from 'lodash/findIndex';
 
 import './App.css';
 import logo from '../public/logo.png';
@@ -156,7 +156,7 @@ const FileManager = React.createClass({
             } })
             .then(() => {
                 this.state.queue.forEach((id) => {
-                    this.state.items.splice(findIndex(this.state.items, item => item.id === id), 1);
+                    this.state.items.splice(FindIndex(this.state.items, item => item.id === id), 1);
                 });
 
                 this.state.files = [];
@@ -469,7 +469,7 @@ const LogComponent = props => (
             </TableHead>
             <TableBody>
                 {props.logs.map(n => (
-                    <TableRow key={n.ts}>
+                    <TableRow key={n.id}>
                         <TableCell>{n.msg}</TableCell>
                         <TableCell>{Moment(n.ts, 'x').format('DD-MM-YYYY HH:mm:ss')}</TableCell>
                     </TableRow>
@@ -501,7 +501,7 @@ const ChecklistArticles = props => (
             </TableHead>
             <TableBody>
                 {props.articles.map(n => (
-                    <TableRow key={n.RECID}>
+                    <TableRow key={n.ITEMNO}>
                         <TableCell>{n.PGROUP}</TableCell>
                         <TableCell>{n.GRPCODE}</TableCell>
                         <TableCell>{n.ITEMNO}</TableCell>
@@ -571,7 +571,8 @@ ViewLogs.propTypes = {
     onTabsChange: PropTypes.func.isRequired,
     value: PropTypes.number.isRequired,
     logs: PropTypes.arrayOf(PropTypes.shape({
-        ts: PropTypes.number.isRequired,
+        id: PropTypes.string.isRequired,
+        ts: PropTypes.isRequired,
         msg: PropTypes.string.isRequired,
     })).isRequired,
     articles: PropTypes.shape({
@@ -661,18 +662,50 @@ class App extends React.Component {
     subscribeToSocketEvents() {
         this.state.socket = openSocket(cnf.webhook_worker.uri);
 
-        this.state.socket.on('log', (msg) => {
-            const logs = this.state.logs;
+        const logUpdates = [];
+        const articleUpdates = [];
 
-            logs.unshift(msg);
-            this.setState({ logs });
+        this.state.socket.on('log', (msg) => {
+            logUpdates.push(msg);
+
+            setTimeout(() => {
+                const logs = this.state.logs;
+
+                logUpdates.forEach((l) => {
+                    logs.unshift(l);
+                });
+
+                logUpdates.length = 0;
+                this.setState({ logs });
+            }, 1000);
         });
 
         this.state.socket.on('stockItem', (stockItem) => {
-            const articles = this.state.articles;
+            articleUpdates.push(stockItem);
 
-            articles.approved.unshift(stockItem);
-            this.setState({ articles });
+            setTimeout(() => {
+                const articles = this.state.articles;
+
+                articleUpdates.forEach((a) => {
+                    articles.approved.unshift(a);
+
+                    const uindex = FindIndex(articles.unapproved, { ITEMNO: a.ITEMNO });
+
+                    if (uindex >= 0) {
+                        articles.unapproved.splice(uindex, 1);
+                        console.log('REMOVE UNAPPROVED');
+                    }
+
+                    const eindex = FindIndex(articles.expired, { ITEMNO: a.ITEMNO });
+
+                    if (eindex >= 0) {
+                        articles.expired.splice(eindex, 1);
+                        console.log('REMOVE EXPIRED');
+                    }
+                });
+                articleUpdates.length = 0;
+                this.setState({ articles });
+            }, 1000);
         });
 
         this.setState(this.state);
