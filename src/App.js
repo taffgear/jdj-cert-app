@@ -99,7 +99,7 @@ const FileManager = React.createClass({
 
     onDrop(files) {
         files.forEach((f, index) => {
-            if (f.type === 'text/csv') {
+            if (f.type === 'text/csv' || f.type === 'application/vnd.ms-excel') {
                 files.splice(index, 1);
                 this.props.onprogress(true);
                 return this.processCSVFile(f);
@@ -136,8 +136,8 @@ const FileManager = React.createClass({
 
             if (this.state.files.length === this.state.queue.length) { this.upload(); }
         };
-        // reader.onabort = () => console.log('file reading was aborted');
-        // reader.onerror = () => console.log('file reading has failed');
+        reader.onabort = () => console.log('file reading was aborted');
+        reader.onerror = () => console.log('file reading has failed');
 
         reader.readAsDataURL(file);
     },
@@ -283,7 +283,7 @@ const FileManager = React.createClass({
                             <form className="upload-file-form">
                                 <Dropzone
                                     onDrop={this.onDrop}
-                                    accept="text/csv, application/pdf, ">
+                                    accept="text/csv, application/pdf, application/vnd.ms-excel">
                                     <Typography type="title" component="p" align="center">Sleep bestanden in dit vak of klik op de plus knop om bestanden te selecteren.</Typography>
 
                                     <Button fab mini color="primary" aria-label="add" className="upload-file">
