@@ -4,6 +4,11 @@
 .flex {
   flex: 1;
 }
+
+.appBar img {
+  margin-right: 20px;
+}
+
 .dialogContent {
   margin-top: 100px;
 }
@@ -41,9 +46,12 @@
 }
 
 .process-files {
+  position: absolute !important;
+  bottom:0;
   margin-bottom: 20px;
 }
 .dropzone {
+  position: relative;
   width: 100%;
 }
 .dropzone p {
@@ -54,12 +62,14 @@
   top: calc(50%);
   left: calc(50% - 40px);
 }
-.dropzone > div {
+
+.upload-file-form {
   position: relative;
-  width: calc(100% - 50px) !important;
-  height: 200px !important;
-  padding: 20px;
-  margin-bottom: 20px;
+}
+.upload-file-form > div {
+  border: none !important;
+  width: 100% !important;
+  height: 380px !important;
 }
 
 .csv-mapping-field-label {

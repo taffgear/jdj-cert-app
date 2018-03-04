@@ -48,6 +48,7 @@ import axios from 'axios';
 import findIndex from 'lodash/findIndex';
 
 import './App.css';
+import logo from '../public/logo.png';
 
 import cnf from '../config.json';
 
@@ -101,19 +102,25 @@ const FileManager = React.createClass({
             if (f.type === 'text/csv') {
                 files.splice(index, 1);
                 this.props.onprogress(true);
-                setTimeout(() => this.processCSVFile(f), 1000);
+                return setTimeout(() => this.processCSVFile(f), 1000);
             }
 
             return f;
         });
 
-        const filesWithIds = files.map(f => ({ id: shortid.generate(), file: f }));
+        const filesWithIds = files.map(f => ({ id: shortid.generate(), file: f, selected: true }));
         this.state.items = this.state.items.concat(filesWithIds);
         this.setState(this.state);
     },
 
     onSelectChange(checked, index) {
         this.state.items[index].selected = checked;
+        this.setState(this.state);
+    },
+
+    toggleFileCheckbox(index) {
+        const checked = this.state.items[index].selected;
+        this.state.items[index].selected = (!checked);
         this.setState(this.state);
     },
 
@@ -274,28 +281,25 @@ const FileManager = React.createClass({
     render() {
         return (
             <Grid className="filemanager" container spacing={0}>
-                <Grid item xs={4}>
+                <Grid item xs={4} className="dropzone">
                     <Card className="top-left">
                         <CardContent>
-                            <Typography type="headline" component="h2" align="left">Bestanden</Typography>
                             <form className="upload-file-form">
-                                <div className="dropzone">
-                                    <Dropzone
-                                        onDrop={this.onDrop}
-                                        accept="text/csv, application/pdf, ">
-                                        <p>Sleep bestanden in dit vak of klik op
-                                        de plus knop om bestanden te selecteren.
-                                        </p>
-                                        <Button fab mini color="primary" aria-label="add" className="upload-file">
-                                            <AddIcon />
-                                        </Button>
-                                    </Dropzone>
-                                    {
+                                <Dropzone
+                                    onDrop={this.onDrop}
+                                    accept="text/csv, application/pdf, ">
+                                    <Typography type="title" component="p" align="center">Sleep bestanden in dit vak of klik op de plus knop om bestanden te selecteren.</Typography>
+
+                                    <Button fab mini color="primary" aria-label="add" className="upload-file">
+                                        <AddIcon />
+                                    </Button>
+                                </Dropzone>
+                                {
                     Size(Find(this.state.items, { selected: true })) ?
                         <Button className="process-files" raised color="primary" onClick={this.onProcessFilesClick}>Geselecteerde bestanden verwerken</Button>
                   : ''
                   }
-                                </div>
+
                             </form>
                         </CardContent>
                     </Card>
@@ -303,6 +307,11 @@ const FileManager = React.createClass({
                 <Grid item xs={8}>
                     <Card className="top-right">
                         <CardContent>
+                            {
+                          this.state.items.length < 1 ?
+                              <Typography type="headline" component="h2" align="center">Geselecteerde PDF bestanden worden hier getoond...</Typography>
+                        : ''
+                        }
                             <List>
                                 <ScrollArea
                                     speed={0.8}
@@ -311,6 +320,7 @@ const FileManager = React.createClass({
                                     minScrollSize={40}>
                                     {this.state.items.map((obj, index) => (
                                         <ListItem
+                                            onClick={() => this.toggleFileCheckbox(index)}
                                             key={obj.id}
                                             dense
                                             button>
@@ -815,8 +825,9 @@ class App extends React.Component {
                     ]} />
                 <AppBar position="static" className="appBar">
                     <Toolbar>
+                        <img width="50" src={logo} alt="logo" />
                         <Typography type="title" color="inherit" className="flex">
-                          J de Jonge certificaten
+                          Certificaten beheer
                         </Typography>
                         <Button color="inherit" onClick={this.handleSettingsOpen}>Instellingen</Button>
                     </Toolbar>
