@@ -102,7 +102,7 @@ const FileManager = React.createClass({
             if (f.type === 'text/csv') {
                 files.splice(index, 1);
                 this.props.onprogress(true);
-                return setTimeout(() => this.processCSVFile(f), 1000);
+                return this.processCSVFile(f);
             }
 
             return f;
@@ -164,10 +164,8 @@ const FileManager = React.createClass({
 
                 this.setState(this.state);
 
-                setTimeout(() => {
-                    this.props.onprogress(false);
-                    this.props.onprocessed('De geselecteerde bestanden worden verwerkt.');
-                }, 1000);
+                this.props.onprogress(false);
+                this.props.onprocessed('De geselecteerde bestanden worden verwerkt.');
             })
             .catch(console.log)
       ;
@@ -227,10 +225,8 @@ const FileManager = React.createClass({
                 this.state.csv_headers = [];
                 this.setState(this.state);
 
-                setTimeout(() => {
-                    this.props.onprogress(false);
-                    this.props.onprocessed('CSV bestand is verstuurd naar de server.');
-                }, 1000);
+                this.props.onprogress(false);
+                this.props.onprocessed('CSV bestand is verstuurd naar de server.');
             });
     },
 
@@ -820,11 +816,9 @@ class App extends React.Component {
                 this.state.socket.emit('settings', Omit(this.state.settings, 'open'));
 
                 this.state.loading = false;
-                setTimeout(() => {
-                    this.state.snackbar.message = 'Instellingen zijn opgeslagen.';
-                    this.state.snackbar.open = true;
-                    this.setState(this.state);
-                }, 1000);
+                this.state.snackbar.message = 'Instellingen zijn opgeslagen.';
+                this.state.snackbar.open = true;
+                this.setState(this.state);
             });
     };
 
