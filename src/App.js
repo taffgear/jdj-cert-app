@@ -687,7 +687,12 @@ class App extends React.Component {
                 const articles = this.state.articles;
 
                 articleUpdates.forEach((a) => {
-                    articles.approved.unshift(a);
+                    const aindex = FindIndex(articles.approved, { ITEMNO: a.ITEMNO });
+
+                    if (aindex >= 0) {
+                        articles.approved.splice(aindex, 1);
+                        console.log('REMOVE APPROVED');
+                    }
 
                     const uindex = FindIndex(articles.unapproved, { ITEMNO: a.ITEMNO });
 
@@ -702,6 +707,8 @@ class App extends React.Component {
                         articles.expired.splice(eindex, 1);
                         console.log('REMOVE EXPIRED');
                     }
+
+                    articles.approved.unshift(a);
                 });
                 articleUpdates.length = 0;
                 this.setState({ articles });
@@ -750,8 +757,8 @@ class App extends React.Component {
     };
 
     onLogTabsChange = (event, value) => {
-        this.state.activeLogsTab = value;
-        this.setState(this.state);
+        const activeLogsTab = value;
+        this.setState({ activeLogsTab });
     };
 
     updateProgress = (loading) => {
