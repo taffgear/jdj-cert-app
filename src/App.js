@@ -194,12 +194,14 @@ const FileManager = React.createClass({
         this.props.onprogress(true);
 
         const fields = this.state.csv_mapping_fields;
+        const testHeaders = ['test1', 'test2', 'test3', 'test4', 'test5', 'test6', 'test7', 'test8'];
 
         this.state.csv_data_mapped = Reduce(this.state.csv_data, (acc, arr) => {
             const row = {};
 
             fields.forEach((field) => {
-                row[field.name] = (field.columnIndex >= 0 && arr[field.columnIndex] ? arr[field.columnIndex] : '');
+                const name = (testHeaders.indexOf(field.name) >= 0 ? `${field.name}@${field.value}` : field.name);
+                row[name] = (field.columnIndex >= 0 && arr[field.columnIndex] ? arr[field.columnIndex] : '');
             });
 
             acc.push(row);
@@ -858,7 +860,7 @@ class App extends React.Component {
                     <Toolbar>
                         <img width="50" src={logo} alt="logo" />
                         <Typography type="title" color="inherit" className="flex">
-                          Certificaten beheer
+                          J. de Jonge Certificaten Manager
                         </Typography>
                         <Button color="inherit" onClick={this.handleSettingsOpen}>Instellingen</Button>
                     </Toolbar>
