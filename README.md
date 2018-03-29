@@ -19,13 +19,9 @@ yarn global add create-react-app
 git clone git@github.com:taffgear/jdj-cert-app.git
 
 cd jdj-cert-app
-
 yarn install
-
 mkdir dist
-
 mkdir build
-
 nano config.json
 
 ### Config example
