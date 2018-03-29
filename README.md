@@ -42,7 +42,7 @@ nano config.json
 }
 ```
 
-**[Webhook worker](https://github.com/taffgear/jdj-cert-worker) and [api](https://github.com/taffgear/jdj-cert-app) services need to be active for the app to function correctly!**
+**[Webhook worker](https://github.com/taffgear/jdj-cert-worker) and [api](https://github.com/taffgear/jdj-cert-api) services need to be active for the app to function correctly!**
 
 ### Start/deploy app
 
