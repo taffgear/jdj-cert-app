@@ -679,7 +679,7 @@ const getArticlesLogs = () => {
         username: cnf.api.auth.username,
         password: cnf.api.auth.password,
     },
-        timeout: 5000 };
+        timeout: cnf.request_timeout || 10000 };
 
     const limit = cnf.max_articles;
 
@@ -730,6 +730,18 @@ class App extends React.Component {
             this.state.email.filePath = msg.filePath;
             this.state.email.open = true;
 
+            this.setState(this.state);
+        });
+
+        this.state.socket.on('email_success', (recipients) => {
+            this.state.snackbar.message = `E-mail is verzonden naar ${recipients.join(', ')}`;
+            this.state.snackbar.open = true;
+            this.setState(this.state);
+        });
+
+        this.state.socket.on('email_failed', (msg) => {
+            this.state.snackbar.message = `Het verzenden van de e-mail is mislukt: ${msg}`;
+            this.state.snackbar.open = true;
             this.setState(this.state);
         });
 
@@ -895,8 +907,6 @@ class App extends React.Component {
 
         this.state.socket.emit('email', Omit(this.state.email, 'open'));
         this.state.loading = false;
-        this.state.snackbar.message = 'E-mail is verzonden.';
-        this.state.snackbar.open = true;
         this.setState(this.state);
     };
 
