@@ -859,7 +859,7 @@ class App extends React.Component {
         this.setState(this.state);
     }
 
-    reloadArticlesLogs() {
+    reloadArticlesLogs(init) {
         this.updateProgress(true);
 
         getArticlesLogs().then((result) => {
@@ -878,12 +878,13 @@ class App extends React.Component {
         }).finally(() => {
             this.state.loading = false;
             this.setState(this.state);
-            this.subscribeToSocketEvents();
+
+            if (init) this.subscribeToSocketEvents();
         });
     }
 
     componentDidMount() {
-        this.reloadArticlesLogs();
+        this.reloadArticlesLogs(true);
     }
 
     state = {
@@ -1066,7 +1067,7 @@ class App extends React.Component {
                 this.state.snackbar.open = true;
                 this.setState(this.state);
 
-                this.reloadArticlesLogs();
+                this.reloadArticlesLogs(false);
             });
     };
 
