@@ -459,9 +459,14 @@ const SettingsComponent = props => (
                 </FormGroup>
 
                 <FormGroup row className="mb20 mt20">
-                    <Typography type="title" color="inherit" className="flex">
-                  Gekeurde artikelen
-                    </Typography>
+                <Typography type="title" color="inherit" className="flex">
+              Aanvinken om artikelen te selecteren.
+                </Typography>
+
+                </FormGroup>
+
+                <FormGroup row className="mb20">
+
                 </FormGroup>
 
                 {Object.keys(props.settings.approved).map(key => (
@@ -900,43 +905,46 @@ class App extends React.Component {
             watch_dir: '',
             fixed_date: '',
             approved: {
-                status_1: { value: false, label: 'Status 1' },
-                status_2: { value: false, label: 'Status 2' },
-                status_3: { value: false, label: 'Status 3' },
-                status_4: { value: false, label: 'Status 4' },
-                status_5: { value: false, label: 'Status 5' },
-                status_6: { value: false, label: 'Status 6' },
-                status_7: { value: false, label: 'Status 7' },
-                status_8: { value: false, label: 'Status 8' },
-                status_9: { value: false, label: 'Status 9' },
-                status_10: { value: false, label: 'Status 10' },
-                status_11: { value: false, label: 'Status 11' },
+                status_0: { value: false, label: 'Beschikbaar' },
+                status_1: { value: false, label: 'In Huur' },
+                status_2: { value: false, label: 'In Reparatie' },
+                status_3: { value: false, label: 'In Onderhoud' },
+                status_4: { value: false, label: 'Onderweg' },
+                status_5: { value: false, label: 'Gereserveerd' },
+                status_6: { value: false, label: 'Afgekeurd' },
+                status_7: { value: false, label: 'Retour, nog te testen' },
+                status_8: { value: false, label: 'Verkocht' },
+                status_9: { value: false, label: 'Vermist/ Gestolen' },
+                status_10: { value: false, label: 'Inactief/ Foutief' },
+                status_11: { value: false, label: 'Controleren in systeem' },
             },
             unapproved: {
-                status_1: { value: false, label: 'Status 1' },
-                status_2: { value: false, label: 'Status 2' },
-                status_3: { value: false, label: 'Status 3' },
-                status_4: { value: false, label: 'Status 4' },
-                status_5: { value: false, label: 'Status 5' },
-                status_6: { value: false, label: 'Status 6' },
-                status_7: { value: false, label: 'Status 7' },
-                status_8: { value: false, label: 'Status 8' },
-                status_9: { value: false, label: 'Status 9' },
-                status_10: { value: false, label: 'Status 10' },
-                status_11: { value: false, label: 'Status 11' },
+              status_0: { value: false, label: 'Beschikbaar' },
+              status_1: { value: false, label: 'In Huur' },
+              status_2: { value: false, label: 'In Reparatie' },
+              status_3: { value: false, label: 'In Onderhoud' },
+              status_4: { value: false, label: 'Onderweg' },
+              status_5: { value: false, label: 'Gereserveerd' },
+              status_6: { value: false, label: 'Afgekeurd' },
+              status_7: { value: false, label: 'Retour, nog te testen' },
+              status_8: { value: false, label: 'Verkocht' },
+              status_9: { value: false, label: 'Vermist/ Gestolen' },
+              status_10: { value: false, label: 'Inactief/ Foutief' },
+              status_11: { value: false, label: 'Controleren in systeem' },
             },
             expired: {
-                status_1: { value: false, label: 'Status 1' },
-                status_2: { value: false, label: 'Status 2' },
-                status_3: { value: false, label: 'Status 3' },
-                status_4: { value: false, label: 'Status 4' },
-                status_5: { value: false, label: 'Status 5' },
-                status_6: { value: false, label: 'Status 6' },
-                status_7: { value: false, label: 'Status 7' },
-                status_8: { value: false, label: 'Status 8' },
-                status_9: { value: false, label: 'Status 9' },
-                status_10: { value: false, label: 'Status 10' },
-                status_11: { value: false, label: 'Status 11' },
+              status_0: { value: false, label: 'Beschikbaar' },
+              status_1: { value: false, label: 'In Huur' },
+              status_2: { value: false, label: 'In Reparatie' },
+              status_3: { value: false, label: 'In Onderhoud' },
+              status_4: { value: false, label: 'Onderweg' },
+              status_5: { value: false, label: 'Gereserveerd' },
+              status_6: { value: false, label: 'Afgekeurd' },
+              status_7: { value: false, label: 'Retour, nog te testen' },
+              status_8: { value: false, label: 'Verkocht' },
+              status_9: { value: false, label: 'Vermist/ Gestolen' },
+              status_10: { value: false, label: 'Inactief/ Foutief' },
+              status_11: { value: false, label: 'Controleren in systeem' },
             },
         },
         email: {
