@@ -19,9 +19,9 @@ import DeleteIcon from 'material-ui-icons/Delete';
 import IconButton from 'material-ui/IconButton';
 import CloseIcon from 'material-ui-icons/Close';
 import Card, { CardContent } from 'material-ui/Card';
-import { FormGroup } from 'material-ui/Form';
-import Checkbox from 'material-ui/Checkbox';
+import { FormGroup, FormControlLabel } from 'material-ui/Form';
 import TextField from 'material-ui/TextField';
+import Checkbox from 'material-ui/Checkbox';
 import { InputLabel } from 'material-ui/Input';
 import Select from 'material-ui/Select';
 import { MenuItem } from 'material-ui/Menu';
@@ -409,17 +409,31 @@ const CSVConfiguratorComponent = props => (
 const SettingsComponent = props => (
     <div>
         <Dialog
+            fullScreen
+            transition={Transition}
             open={props.settings.open}
             onClose={props.handleClose}
             aria-labelledby="form-dialog-title">
-            <DialogTitle id="form-dialog-title">Instellingen</DialogTitle>
-            <DialogContent>
+            <AppBar className="appBar">
+                <Toolbar>
+                    <IconButton color="inherit" onClick={props.handleClose} aria-label="Sluiten">
+                        <CloseIcon />
+                    </IconButton>
+                    <Typography type="title" color="inherit" className="flex">
+              Instellingen
+                    </Typography>
+                    <Button color="inherit" onClick={props.handleSave}>
+                Opslaan
+                    </Button>
+                </Toolbar>
+            </AppBar>
+            <DialogContent className="dialogContent">
                 <DialogContentText>
              Pas hier de instellingen aan voor het verwerken van certificaat bestanden.
                 </DialogContentText>
                 <Divider />
                 <br />
-                <FormGroup>
+                <FormGroup className="mt20 mb20">
                     <TextField
                         id="date-certificates"
                         label="Datum voor certificaten"
@@ -443,15 +457,65 @@ const SettingsComponent = props => (
                         value={props.settings.watch_dir}
                         fullWidth />
                 </FormGroup>
+
+                <FormGroup row className="mb20 mt20">
+                    <Typography type="title" color="inherit" className="flex">
+                  Gekeurde artikelen
+                    </Typography>
+                </FormGroup>
+
+                {Object.keys(props.settings.approved).map(key => (
+                    <FormGroup row key={`approved_${key}`}>
+                        <FormControlLabel
+                            control={
+                                <Checkbox
+                                    checked={props.settings.approved[key].value}
+                                    onChange={props.onChangeCheckbox('approved', key)}
+                                    value="1" />
+                      }
+                            label={props.settings.approved[key].label} />
+                    </FormGroup>
+                ))}
+
+                <FormGroup row className="mb20 mt20">
+                    <Typography type="title" color="inherit" className="flex">
+                  Ongekeurde artikelen
+                    </Typography>
+                </FormGroup>
+
+                {Object.keys(props.settings.unapproved).map(key => (
+                    <FormGroup row key={`unapproved_${key}`}>
+                        <FormControlLabel
+                            control={
+                                <Checkbox
+                                    checked={props.settings.unapproved[key].value}
+                                    onChange={props.onChangeCheckbox('unapproved', key)}
+                                    value="1" />
+                      }
+                            label={props.settings.unapproved[key].label} />
+                    </FormGroup>
+                ))}
+
+                <FormGroup row className="mb20 mt20">
+                    <Typography type="title" color="inherit" className="flex">
+                  Verlopen artikelen
+                    </Typography>
+                </FormGroup>
+
+                {Object.keys(props.settings.expired).map(key => (
+                    <FormGroup row key={`expired_${key}`}>
+                        <FormControlLabel
+                            control={
+                                <Checkbox
+                                    checked={props.settings.expired[key].value}
+                                    onChange={props.onChangeCheckbox('expired', key)}
+                                    value="1" />
+                      }
+                            label={props.settings.expired[key].label} />
+                    </FormGroup>
+                ))}
+
             </DialogContent>
-            <DialogActions>
-                <Button onClick={props.handleClose} color="primary">
-             Sluiten
-                </Button>
-                <Button onClick={props.handleSave} color="primary">
-             Opslaan
-                </Button>
-            </DialogActions>
         </Dialog>
     </div>
 );
@@ -795,7 +859,7 @@ class App extends React.Component {
         this.setState(this.state);
     }
 
-    componentDidMount() {
+    reloadArticlesLogs() {
         this.updateProgress(true);
 
         getArticlesLogs().then((result) => {
@@ -803,6 +867,12 @@ class App extends React.Component {
             this.state.logs = result.logs;
             this.state.settings.watch_dir = result.settings.watch_dir;
             this.state.settings.fixed_date = result.settings.fixed_date;
+
+            if (result.settings.approved) { this.state.settings.approved = result.settings.approved; }
+
+            if (result.settings.unapproved) { this.state.settings.unapproved = result.settings.unapproved; }
+
+            if (result.settings.expired) { this.state.settings.expired = result.settings.expired; }
         }).catch((e) => {
             console.log(e);
         }).finally(() => {
@@ -810,6 +880,10 @@ class App extends React.Component {
             this.setState(this.state);
             this.subscribeToSocketEvents();
         });
+    }
+
+    componentDidMount() {
+        this.reloadArticlesLogs();
     }
 
     state = {
@@ -824,6 +898,45 @@ class App extends React.Component {
             open: false,
             watch_dir: '',
             fixed_date: '',
+            approved: {
+                status_1: { value: false, label: 'Status 1' },
+                status_2: { value: false, label: 'Status 2' },
+                status_3: { value: false, label: 'Status 3' },
+                status_4: { value: false, label: 'Status 4' },
+                status_5: { value: false, label: 'Status 5' },
+                status_6: { value: false, label: 'Status 6' },
+                status_7: { value: false, label: 'Status 7' },
+                status_8: { value: false, label: 'Status 8' },
+                status_9: { value: false, label: 'Status 9' },
+                status_10: { value: false, label: 'Status 10' },
+                status_11: { value: false, label: 'Status 11' },
+            },
+            unapproved: {
+                status_1: { value: false, label: 'Status 1' },
+                status_2: { value: false, label: 'Status 2' },
+                status_3: { value: false, label: 'Status 3' },
+                status_4: { value: false, label: 'Status 4' },
+                status_5: { value: false, label: 'Status 5' },
+                status_6: { value: false, label: 'Status 6' },
+                status_7: { value: false, label: 'Status 7' },
+                status_8: { value: false, label: 'Status 8' },
+                status_9: { value: false, label: 'Status 9' },
+                status_10: { value: false, label: 'Status 10' },
+                status_11: { value: false, label: 'Status 11' },
+            },
+            expired: {
+                status_1: { value: false, label: 'Status 1' },
+                status_2: { value: false, label: 'Status 2' },
+                status_3: { value: false, label: 'Status 3' },
+                status_4: { value: false, label: 'Status 4' },
+                status_5: { value: false, label: 'Status 5' },
+                status_6: { value: false, label: 'Status 6' },
+                status_7: { value: false, label: 'Status 7' },
+                status_8: { value: false, label: 'Status 8' },
+                status_9: { value: false, label: 'Status 9' },
+                status_10: { value: false, label: 'Status 10' },
+                status_11: { value: false, label: 'Status 11' },
+            },
         },
         email: {
             open: false,
@@ -931,6 +1044,11 @@ class App extends React.Component {
         this.setState(this.state);
     }
 
+    updateSettingsStatus = (cat, name) => (e) => {
+        this.state.settings[cat][name].value = e.target.checked;
+        this.setState(this.state);
+    }
+
     handleSettingsSave = () => {
         this.state.settings.open = false;
         this.updateProgress(true);
@@ -947,6 +1065,8 @@ class App extends React.Component {
                 this.state.snackbar.message = 'Instellingen zijn opgeslagen.';
                 this.state.snackbar.open = true;
                 this.setState(this.state);
+
+                this.reloadArticlesLogs();
             });
     };
 
@@ -1005,7 +1125,8 @@ class App extends React.Component {
                     handleSave={this.handleSettingsSave}
                     settings={this.state.settings}
                     onChangeFixedDate={this.updateSettingsFixedDate}
-                    onChangeWatchDir={this.updateSettingsWatchDir} />
+                    onChangeWatchDir={this.updateSettingsWatchDir}
+                    onChangeCheckbox={this.updateSettingsStatus} />
                 <EmailComponent
                     handleClose={this.handleEmailClose}
                     handleSave={this.handleEmailSave}

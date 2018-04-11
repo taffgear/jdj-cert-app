@@ -5,6 +5,13 @@
   flex: 1;
 }
 
+.mt20 {
+  margin-top: 20px;
+}
+.mb20 {
+  margin-bottom: 20px;
+}
+
 .appBar img {
   margin-right: 20px;
 }
