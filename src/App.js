@@ -456,6 +456,67 @@ const SettingsComponent = props => (
     </div>
 );
 
+const EmailComponent = props => (
+    <div>
+        <Dialog
+            open={props.email.open}
+            onClose={props.handleClose}
+            aria-labelledby="form-dialog-title">
+            <DialogTitle id="form-dialog-title">E-mail versturen voor artikel {props.email.itemno}</DialogTitle>
+            <DialogContent>
+                <DialogContentText>
+             Geef een of meerdere geldigde e-mailadressen op (comma gescheiden)
+                </DialogContentText>
+                <Divider />
+                <br />
+                <FormGroup>
+                    <TextField
+                        id="email-recipients"
+                        label="Ontvanger(s)"
+                        type="email"
+                        name="recipients"
+                        onChange={props.onChangeRecipients}
+                        value={props.email.recipients}
+                        fullWidth />
+                </FormGroup>
+                <FormGroup>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        id="email-subject"
+                        name="subject"
+                        label="Onderwerp"
+                        type="text"
+                        onChange={props.onChangeSubject}
+                        value={props.email.subject}
+                        fullWidth />
+                </FormGroup>
+                <FormGroup>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        id="email-body"
+                        name="body"
+                        label="Bericht"
+                        multiline
+                        rows={5}
+                        onChange={props.onChangeBody}
+                        value={props.email.body}
+                        fullWidth />
+                </FormGroup>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={props.handleClose} color="primary">
+             Annuleren
+                </Button>
+                <Button onClick={props.handleSave} color="primary">
+             Verzenden
+                </Button>
+            </DialogActions>
+        </Dialog>
+    </div>
+);
+
 const LogComponent = props => (
     <Paper className="logs-list">
         <Table>
@@ -617,7 +678,8 @@ const getArticlesLogs = () => {
     const opts = { auth: {
         username: cnf.api.auth.username,
         password: cnf.api.auth.password,
-    } };
+    },
+        timeout: 5000 };
 
     const limit = cnf.max_articles;
 
@@ -662,6 +724,14 @@ class App extends React.Component {
 
         const logUpdates = [];
         const articleUpdates = [];
+
+        this.state.socket.on('email', (msg) => {
+            this.state.email.itemno = msg.itemno;
+            this.state.email.filePath = msg.filePath;
+            this.state.email.open = true;
+
+            this.setState(this.state);
+        });
 
         this.state.socket.on('log', (msg) => {
             logUpdates.push(msg);
@@ -721,10 +791,11 @@ class App extends React.Component {
             this.state.logs = result.logs;
             this.state.settings.watch_dir = result.settings.watch_dir;
             this.state.settings.fixed_date = result.settings.fixed_date;
+        }).catch((e) => {
+            console.log(e);
+        }).finally(() => {
             this.state.loading = false;
-
             this.setState(this.state);
-
             this.subscribeToSocketEvents();
         });
     }
@@ -741,6 +812,14 @@ class App extends React.Component {
             open: false,
             watch_dir: '',
             fixed_date: '',
+        },
+        email: {
+            open: false,
+            recipients: '',
+            subject: '',
+            body: '',
+            itemno: '',
+            filePath: '',
         },
         loading: false,
         snackbar: {
@@ -784,6 +863,43 @@ class App extends React.Component {
         this.state.snackbar.message = '';
         this.setState(this.state);
     };
+
+    handleEmailOpen = () => {
+        this.state.email.open = true;
+        this.setState(this.state);
+    };
+
+    handleEmailClose = () => {
+        this.state.email.open = false;
+        this.setState(this.state);
+    };
+
+    updateEmailRecipients = (e) => {
+        this.state.email.recipients = e.target.value;
+        this.setState(this.state);
+    }
+
+    updateEmailSubject = (e) => {
+        this.state.email.subject = e.target.value;
+        this.setState(this.state);
+    }
+
+    updateEmailBody = (e) => {
+        this.state.email.body = e.target.value;
+        this.setState(this.state);
+    }
+
+    handleEmailSave = () => {
+        this.state.email.open = false;
+        this.updateProgress(true);
+
+        this.state.socket.emit('email', Omit(this.state.email, 'open'));
+        this.state.loading = false;
+        this.state.snackbar.message = 'E-mail is verzonden.';
+        this.state.snackbar.open = true;
+        this.setState(this.state);
+    };
+
 
     handleSettingsOpen = () => {
         this.state.settings.open = true;
@@ -880,6 +996,13 @@ class App extends React.Component {
                     settings={this.state.settings}
                     onChangeFixedDate={this.updateSettingsFixedDate}
                     onChangeWatchDir={this.updateSettingsWatchDir} />
+                <EmailComponent
+                    handleClose={this.handleEmailClose}
+                    handleSave={this.handleEmailSave}
+                    email={this.state.email}
+                    onChangeRecipients={this.updateEmailRecipients}
+                    onChangeSubject={this.updateEmailSubject}
+                    onChangeBody={this.updateEmailBody} />
             </div>
         );
     }
