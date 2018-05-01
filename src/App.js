@@ -535,8 +535,14 @@ const EmailComponent = props => (
             open={props.email.open}
             onClose={props.handleClose}
             aria-labelledby="form-dialog-title">
-            <DialogTitle id="form-dialog-title">E-mail versturen voor artikel {props.email.itemno}</DialogTitle>
+            <DialogTitle id="form-dialog-title">E-mail versturen met certificaat voor onderstaande artikelen</DialogTitle>
             <DialogContent>
+                <ul>
+                    {props.email.articles.map(a => (
+                        <li key={a.itemno}>{a.itemno}</li>
+                  ))}
+                </ul>
+
                 <DialogContentText>
              Geef een of meerdere geldigde e-mailadressen op (comma gescheiden)
                 </DialogContentText>
@@ -626,7 +632,7 @@ const ChecklistArticles = props => (
                     <TableCell>DESC#1</TableCell>
                     <TableCell>DESC#2</TableCell>
                     <TableCell>DESC#3</TableCell>
-                    <TableCell>LASTSER#1</TableCell>
+                    <TableCell>LASTSER#3</TableCell>
                     <TableCell>PERIOD#1</TableCell>
                     <TableCell>CURRDEPOT</TableCell>
                 </TableRow>
@@ -640,7 +646,7 @@ const ChecklistArticles = props => (
                         <TableCell>{n['DESC#1']}</TableCell>
                         <TableCell>{n['DESC#2']}</TableCell>
                         <TableCell>{n['DESC#3']}</TableCell>
-                        <TableCell>{Moment(n['LASTSER#1']).format('DD-MM-YYYY HH:mm:ss')}</TableCell>
+                        <TableCell>{Moment(n['LASTSER#3']).format('DD-MM-YYYY HH:mm:ss')}</TableCell>
                         <TableCell>{n['PERIOD#1']}</TableCell>
                         <TableCell>{n.CURRDEPOT}</TableCell>
                     </TableRow>
@@ -713,7 +719,7 @@ ViewLogs.propTypes = {
             ITEMNO: PropTypes.isRequired,
             PGROUP: PropTypes.string.isRequired,
             GRPCODE: PropTypes.string.isRequired,
-            'LASTSER#1': PropTypes.string.isRequired,
+            'LASTSER#3': PropTypes.string.isRequired,
             'PERIOD#1': PropTypes.number.isRequired,
             CURRDEPOT: PropTypes.string.isRequired,
             'DESC#1': PropTypes.string.isRequired,
@@ -725,7 +731,7 @@ ViewLogs.propTypes = {
             ITEMNO: PropTypes.isRequired,
             PGROUP: PropTypes.string.isRequired,
             GRPCODE: PropTypes.string.isRequired,
-            'LASTSER#1': PropTypes.string.isRequired,
+            'LASTSER#3': PropTypes.string.isRequired,
             'PERIOD#1': PropTypes.number.isRequired,
             CURRDEPOT: PropTypes.string.isRequired,
             'DESC#1': PropTypes.string.isRequired,
@@ -737,7 +743,7 @@ ViewLogs.propTypes = {
             ITEMNO: PropTypes.isRequired,
             PGROUP: PropTypes.string.isRequired,
             GRPCODE: PropTypes.string.isRequired,
-            'LASTSER#1': PropTypes.string.isRequired,
+            'LASTSER#3': PropTypes.string.isRequired,
             'PERIOD#1': PropTypes.number.isRequired,
             CURRDEPOT: PropTypes.string.isRequired,
             'DESC#1': PropTypes.string.isRequired,
@@ -798,11 +804,15 @@ class App extends React.Component {
         const logUpdates = [];
         const articleUpdates = [];
 
-        this.state.socket.on('email', (msg) => {
-            this.state.email.itemno = msg.itemno;
-            this.state.email.filePath = msg.filePath;
+        this.state.socket.on('email', (articles) => {
             this.state.email.open = true;
 
+            if (this.state.email.articles.length) {
+                this.state.email.articles.concat(articles);
+            } else {
+                this.state.email.articles = articles;
+            }
+            
             this.setState(this.state);
         });
 
@@ -961,8 +971,7 @@ class App extends React.Component {
             recipients: '',
             subject: '',
             body: '',
-            itemno: '',
-            filePath: '',
+            articles: [],
         },
         loading: false,
         snackbar: {
@@ -1038,6 +1047,9 @@ class App extends React.Component {
 
         this.state.socket.emit('email', Omit(this.state.email, 'open'));
         this.state.loading = false;
+
+        this.state.email.articles = [];
+
         this.setState(this.state);
     };
 
